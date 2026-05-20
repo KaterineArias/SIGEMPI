@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\MantenimientoController;
 
 // Autenticacion
 Route::get('/', [AuthController::class, 'showLogin'])->name('login');
@@ -33,7 +34,7 @@ Route::middleware(['autenticado'])->group(function () {
     Route::get('/equipos', fn() => 'Módulo Equipos — próximamente')->name('equipos.index');
     Route::get('/usuarios', fn() => 'Módulo Usuarios — próximamente')->name('usuarios.index');
     Route::get('/reportes', fn() => 'Módulo Reportes — próximamente')->name('reportes.index');
-    Route::get('/mantenimientos', fn() => 'Módulo Mantenimientos — próximamente')->name('mantenimientos.index');
+    Route::resource('mantenimientos', MantenimientoController::class);
     Route::get('/mis-asignaciones', fn() => 'Mis asignaciones')->name('mantenimientos.mis-asignaciones');
     Route::get('/registrar-intervencion', fn() => 'Registrar intervención')->name('mantenimientos.registrar');
 });
