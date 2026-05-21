@@ -29,7 +29,7 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             Mis asignaciones
         </a>
-        <a href="{{ route('mantenimientos.registrar') }}" class="nav-link">
+        <a href="{{ route('mantenimientos.create') }}" class="nav-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             Registrar intervención
         </a>
@@ -64,7 +64,7 @@
                 <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
-                <a href="{{ route('mantenimientos.registrar') }}" class="btn btn-primary">
+                <a href="{{ route('mantenimientos.create') }}" class="btn btn-primary">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Registrar intervención
                 </a>
@@ -74,7 +74,7 @@
         <main class="page-body">
             <div class="page-heading">
                 <h1>Hola, {{ session('usuario') }}</h1>
-                <p>Estas son tus asignaciones — {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
+                <p>Estas son tus asignaciones — {{ \Carbon\Carbon::now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
             </div>
 
             {{-- KPIs --}}
@@ -135,7 +135,7 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('mantenimientos.registrar', ['id' => $a->ID_Mantenimiento]) }}"
+                                    <a href="{{ route('mantenimientos.show', $a->ID_Mantenimiento) }}"
                                        class="btn btn-primary" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
                                         Registrar
                                     </a>

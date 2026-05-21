@@ -137,7 +137,33 @@
             </div>
 
             {{-- Próximos mantenimientos --}}
-            <p class="section-title">Próximos mantenimientos programados</p>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:12px;">
+    <p class="section-title" style="margin:0">Próximos mantenimientos programados</p>
+
+    <form method="GET" action="{{ route('dashboard.coordinador') }}"
+          style="display:flex; align-items:center; gap:8px;">
+        <select name="tecnico_id"
+            onchange="this.form.submit()"
+            style="padding:7px 12px; border-radius:9px; border:1px solid #ddd;
+                   font-size:13px; background:#fff; cursor:pointer; min-width:180px;">
+            <option value="">— Todos los técnicos —</option>
+            @foreach($tecnicos as $t)
+                <option value="{{ $t->ID_User }}"
+                    {{ request('tecnico_id') == $t->ID_User ? 'selected' : '' }}>
+                    {{ $t->Usuario }}
+                </option>
+            @endforeach
+        </select>
+
+        @if(request('tecnico_id'))
+            <a href="{{ route('dashboard.coordinador') }}"
+               style="font-size:13px; color:#888; text-decoration:none; padding:7px 10px;
+                      border:1px solid #ddd; border-radius:9px; background:#fff;">
+                ✕ Limpiar
+            </a>
+        @endif
+    </form>
+</div>
             <div class="table-wrapper">
                 @if($proximos->isEmpty())
                     <div class="empty-state">
