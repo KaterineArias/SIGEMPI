@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Mantenimientos')
+@section('title', 'Usuarios')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -30,11 +30,11 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
                 Equipos
             </a>
-            <a href="{{ route('usuarios.index') }}" class="nav-link">
+            <a href="{{ route('usuarios.index') }}" class="nav-link active">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Usuarios
             </a>
-            <a href="{{ route('mantenimientos.index') }}" class="nav-link active">
+            <a href="{{ route('mantenimientos.index') }}" class="nav-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
                 Mantenimientos
             </a>
@@ -67,22 +67,22 @@
     {{-- MAIN --}}
     <div class="main-content">
         <header class="topbar">
-            <span class="topbar-title">Mantenimientos</span>
+            <span class="topbar-title">Usuarios</span>
             <div class="topbar-actions">
                 <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
-                <a href="{{ route('mantenimientos.create') }}" class="btn btn-primary">
+                <a href="{{ route('usuarios.create') }}" class="btn btn-primary">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Nuevo mantenimiento
+                    Nuevo usuario
                 </a>
             </div>
         </header>
 
         <main class="page-body">
             <div class="page-heading">
-                <h1>Programación de Mantenimientos</h1>
-                <p>Gestión y seguimiento de intervenciones técnicas</p>
+                <h1>Usuarios del sistema</h1>
+                <p>Gestión de accesos y roles</p>
             </div>
 
             {{-- Mensaje de éxito --}}
@@ -93,58 +93,50 @@
             @endif
 
             <div class="table-wrapper">
-
-                {{-- Filtro por técnico --}}
-                <form action="{{ route('mantenimientos.index') }}" method="GET"
-                      style="padding:12px 16px;border-bottom:1px solid var(--color-border);display:flex;align-items:center;gap:10px;">
-                    <label style="font-size:12px;font-weight:600;color:var(--color-text)">Técnico:</label>
-                    <select name="tecnico_id" onchange="this.form.submit()"
-                            style="padding:6px 10px;border:1px solid var(--color-border);border-radius:7px;font-size:12px;font-family:inherit;background:var(--color-bg);color:var(--color-text);outline:none;">
-                        <option value="">Todos</option>
-                        @foreach($tecnicos as $tecnico)
-                            <option value="{{ $tecnico->ID_User }}"
-                                {{ request('tecnico_id') == $tecnico->ID_User ? 'selected' : '' }}>
-                                {{ $tecnico->Usuario }}
-                            </option>
-                        @endforeach
-                    </select>
-                </form>
-
-                @if($mantenimientos->isEmpty())
+                @if($usuarios->isEmpty())
                     <div class="empty-state">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                        <p>No hay mantenimientos programados.</p>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                        <p>No hay usuarios registrados aún.</p>
                     </div>
                 @else
                     <table>
                         <thead>
                             <tr>
-                                <th>Equipo</th>
-                                <th>Técnico asignado</th>
-                                <th>Fecha programada</th>
-                                <th>Estado</th>
+                                <th>#</th>
+                                <th>Usuario</th>
+                                <th>Rol</th>
+                                <th>Fecha de creación</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($mantenimientos as $mant)
+                            @foreach($usuarios as $u)
                             <tr>
+                                <td class="td-muted">{{ $loop->iteration }}</td>
+                                <td><strong>{{ $u->Usuario }}</strong></td>
                                 <td>
-                                    <strong>{{ $mant->equipo->Codigo_Inventario }}</strong>
-                                    <span class="td-muted"> — {{ $mant->equipo->Tipo }}</span>
-                                </td>
-                                <td>{{ $mant->tecnico->Usuario }}</td>
-                                <td class="td-muted">
-                                    {{ \Carbon\Carbon::parse($mant->Fecha_Programada)->format('d/m/Y') }}
-                                </td>
-                                <td>
-                                    <span class="badge badge-{{ match($mant->Estado_Mantenimiento) {
-                                        'Completado'   => 'green',
-                                        'Cancelado'    => 'red',
-                                        'Reprogramado' => 'yellow',
-                                        default        => 'blue'
-                                    } }}">
-                                        {{ $mant->Estado_Mantenimiento }}
+                                    <span class="badge badge-{{ $u->Rol === 'Coordinador' ? 'blue' : 'orange' }}">
+                                        {{ $u->Rol }}
                                     </span>
+                                </td>
+                                <td class="td-muted">{{ \Carbon\Carbon::parse($u->Fecha_Creacion)->format('d/m/Y') }}</td>
+                                <td>
+                                    <a href="{{ route('usuarios.edit', $u->ID_User) }}" class="btn btn-secondary" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
+                                        Editar
+                                    </a>
+                                    @if($u->Usuario !== session('usuario'))
+                                        <form method="POST" action="{{ route('usuarios.destroy', $u->ID_User) }}" style="display:inline" onsubmit="return confirm('¿Eliminar usuario {{ $u->Usuario }}?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
+                                                Eliminar
+                                            </button>
+                                        </form>
+                                    @else
+                                        <span style="font-size:var(--text-xs);color:var(--color-text-muted);padding:var(--space-1) var(--space-3)">
+                                            (tú)
+                                        </span>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach

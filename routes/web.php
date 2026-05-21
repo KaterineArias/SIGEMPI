@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MantenimientoController;
 use Illuminate\Support\Facades\Route;
@@ -42,6 +43,6 @@ Route::middleware(['autenticado'])->group(function () {
 
     // ── Otros módulos (stubs) ────────────────────────────
     Route::get('/equipos',   fn() => 'Módulo Equipos — próximamente')->name('equipos.index');
-    Route::get('/usuarios',  fn() => 'Módulo Usuarios — próximamente')->name('usuarios.index');
+    Route::resource('usuarios', UserController::class)->middleware('rol:Coordinador');
     Route::get('/reportes',  fn() => 'Módulo Reportes — próximamente')->name('reportes.index');
 });
