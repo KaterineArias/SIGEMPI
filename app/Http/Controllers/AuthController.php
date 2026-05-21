@@ -37,12 +37,16 @@ class AuthController extends Controller
         }
 
         session([
-            'usuario'  => $user->Usuario,
-            'rol'      => $user->Rol,
-            'id_user'  => $user->ID_User,
+            'usuario' => $user->Usuario,
+            'rol'     => $user->Rol,
+            'id_user' => $user->ID_User,
         ]);
 
-        return redirect()->route('dashboard');
+        if ($user->Rol === 'Coordinador') {
+            return redirect()->route('dashboard.coordinador');
+        }
+
+        return redirect()->route('dashboard.tecnico');
     }
 
     public function logout(Request $request)

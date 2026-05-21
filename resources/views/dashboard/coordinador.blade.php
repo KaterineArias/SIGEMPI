@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 @endpush
 
-@section('body')
+@section('content')
 <div class="app-shell">
 
     {{-- SIDEBAR --}}

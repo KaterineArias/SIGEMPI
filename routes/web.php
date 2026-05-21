@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\EquipoController;
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación ────────────────────────────────────────
@@ -33,16 +34,17 @@ Route::middleware(['autenticado'])->group(function () {
         ->name('dashboard.tecnico');
 
     // ── Mantenimientos ───────────────────────────────────
-    // ✅ Solo UNA vez, dentro del middleware
     Route::resource('mantenimientos', MantenimientoController::class);
 
-    // Rutas extra que el resource NO genera
-    Route::get('/mis-asignaciones', function () {
-        return 'Mis asignaciones — próximamente';
-    })->name('mantenimientos.mis-asignaciones');
+    Route::patch('mantenimientos/{mantenimiento}/estado',
+        [MantenimientoController::class, 'cambiarEstado'])
+        ->name('mantenimientos.estado');
+
+    Route::get('/mis-asignaciones', [MantenimientoController::class, 'misAsignaciones'])
+    ->name('mantenimientos.mis-asignaciones');
 
     // ── Otros módulos (stubs) ────────────────────────────
-    Route::get('/equipos',   fn() => 'Módulo Equipos — próximamente')->name('equipos.index');
+    Route::resource('equipos', EquipoController::class);
     Route::resource('usuarios', UserController::class)->middleware('rol:Coordinador');
     Route::get('/reportes',  fn() => 'Módulo Reportes — próximamente')->name('reportes.index');
 });

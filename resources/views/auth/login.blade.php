@@ -5,7 +5,7 @@
     <link rel="stylesheet" href="{{ asset('css/login.css') }}">
 @endpush
 
-@section('body')
+@section('content')
 <div class="login-wrapper">
 
     {{-- Panel izquierdo --}}

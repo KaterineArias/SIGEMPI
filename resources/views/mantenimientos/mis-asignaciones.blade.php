@@ -1,5 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Dashboard Técnico')
+
+@section('title', 'Mis Asignaciones')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -12,20 +13,18 @@
     <aside class="sidebar">
         <div class="sidebar-logo">
             <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-bottom:var(--space-2)">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo SIGEMPI" width="64" height="64"
-                    style="object-fit:contain;border-radius:var(--radius-md);">
+                <img src="{{ asset('img/logo.png') }}" alt="Logo SIGEMPI" width="64" height="64" style="object-fit:contain;border-radius:var(--radius-md)">
                 <span class="brand">SIGE<span>MPI</span></span>
             </div>
         </div>
 
         <span class="nav-section-label">Principal</span>
-        <a href="{{ route('dashboard.tecnico') }}" class="nav-link active">
+        <a href="{{ route('dashboard.tecnico') }}" class="nav-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
             Dashboard
         </a>
-
-        <span class="nav-section-label">Mi trabajo</span>
-        <a href="{{ route('mantenimientos.mis-asignaciones') }}" class="nav-link">
+        <span class="nav-section-label">Mi Trabajo</span>
+        <a href="{{ route('mantenimientos.mis-asignaciones') }}" class="nav-link active">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             Mis asignaciones
         </a>
@@ -59,7 +58,7 @@
     {{-- MAIN --}}
     <div class="main-content">
         <header class="topbar">
-            <span class="topbar-title">Dashboard</span>
+            <span class="topbar-title">Mis Asignaciones</span>
             <div class="topbar-actions">
                 <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -73,55 +72,33 @@
 
         <main class="page-body">
             <div class="page-heading">
-                <h1>Hola, {{ session('usuario') }}</h1>
-                <p>Estas son tus asignaciones — {{ \Carbon\Carbon::now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
+                <h1>Mis Asignaciones</h1>
+                <p>Historial completo de tus intervenciones técnicas</p>
             </div>
 
-            {{-- ✅ Fuera del page-heading --}}
             @if(session('success'))
                 <div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">
                     {{ session('success') }}
                 </div>
             @endif
 
-            {{-- KPIs --}}
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-icon orange">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    </div>
-                    <div class="kpi-value">{{ $stats['mis_programados'] }}</div>
-                    <div class="kpi-label">Pendientes asignados</div>
+            @if($errors->any())
+                <div style="background:#fce7f3;border:1px solid #f9a8d4;color:#9d174d;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">
+                    {{ $errors->first() }}
                 </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon green">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                    </div>
-                    <div class="kpi-value">{{ $stats['mis_completados'] }}</div>
-                    <div class="kpi-label">Completados en total</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon teal">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    </div>
-                    <div class="kpi-value">{{ $stats['mis_este_mes'] }}</div>
-                    <div class="kpi-label">Asignados este mes</div>
-                </div>
-            </div>
+            @endif
 
-            {{-- Tabla de asignaciones --}}
-            <p class="section-title">Mis próximas asignaciones</p>
             <div class="table-wrapper">
                 @if($asignaciones->isEmpty())
                     <div class="empty-state">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                        <p>No tienes mantenimientos asignados por ahora.</p>
+                        <p>No tienes asignaciones registradas.</p>
                     </div>
                 @else
                     <table>
                         <thead>
                             <tr>
-                                <th>Código</th>
+                                <th>Equipo</th>
                                 <th>Tipo</th>
                                 <th>Ubicación</th>
                                 <th>Fecha programada</th>
@@ -132,22 +109,33 @@
                         <tbody>
                             @foreach($asignaciones as $a)
                             <tr>
-                                <td><strong>{{ $a->Codigo_Inventario }}</strong></td>
-                                <td>{{ $a->Tipo }}</td>
-                                <td class="td-muted">{{ $a->Ubicacion }}</td>
-                                <td>{{ \Carbon\Carbon::parse($a->Fecha_Programada)->format('d/m/Y') }}</td>
+                                <td><strong>{{ $a->equipo->Codigo_Inventario }}</strong></td>
+                                <td>{{ $a->equipo->Tipo }}</td>
+                                <td class="td-muted">{{ $a->equipo->Ubicacion }}</td>
+                                <td class="td-muted">
+                                    {{ \Carbon\Carbon::parse($a->Fecha_Programada)->format('d/m/Y') }}
+                                </td>
                                 <td>
-                                    <span class="badge badge-{{ strtolower($a->Estado_Mantenimiento) }}">
+                                    <span class="badge badge-{{ match($a->Estado_Mantenimiento) {
+                                        'Completado'   => 'green',
+                                        'Cancelado'    => 'red',
+                                        'Reprogramado' => 'yellow',
+                                        default        => 'blue'
+                                    } }}">
                                         {{ $a->Estado_Mantenimiento }}
                                     </span>
                                 </td>
                                 <td>
-                                    <button
-                                        class="btn btn-primary"
-                                        style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)"
-                                        onclick="abrirModal({{ $a->ID_Mantenimiento }}, '{{ addslashes($a->Codigo_Inventario) }}', '{{ addslashes($a->Observaciones ?? '') }}')">
-                                        Completar
-                                    </button>
+                                    @if(in_array($a->Estado_Mantenimiento, ['Programado', 'Reprogramado']))
+                                        <button
+                                            class="btn btn-primary"
+                                            style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)"
+                                            onclick="abrirModal({{ $a->ID_Mantenimiento }}, '{{ addslashes($a->equipo->Codigo_Inventario) }}', '{{ addslashes($a->Observaciones ?? '') }}')">
+                                            Completar
+                                        </button>
+                                    @else
+                                        <span style="font-size:var(--text-xs);color:var(--color-text-faint)">—</span>
+                                    @endif
                                 </td>
                             </tr>
                             @endforeach
@@ -173,9 +161,12 @@
 
             <div class="form-field">
                 <label for="modal-observaciones">Observaciones</label>
-                <textarea id="modal-observaciones" name="Observaciones" rows="4"
-                          maxlength="1000"
-                          placeholder="Describe el trabajo realizado..."></textarea>
+                <textarea
+                    id="modal-observaciones"
+                    name="Observaciones"
+                    rows="4"
+                    maxlength="1000"
+                    placeholder="Describe el trabajo realizado..."></textarea>
                 <span style="font-size:11px;color:var(--color-text-muted);text-align:right">
                     <span id="modal-char-count">0</span>/1000
                 </span>
@@ -197,25 +188,28 @@
 @push('scripts')
 <script>
     function abrirModal(id, codigo, observaciones) {
+        const modal = document.getElementById('modal-completar');
         document.getElementById('modal-subtitulo').textContent = 'Equipo: ' + codigo;
         document.getElementById('form-completar').action = '/mantenimientos/' + id + '/estado';
         const textarea = document.getElementById('modal-observaciones');
         textarea.value = observaciones;
         document.getElementById('modal-char-count').textContent = observaciones.length;
-        document.getElementById('modal-completar').style.display = 'flex';
+        modal.style.display = 'flex';
     }
 
     function cerrarModal() {
         document.getElementById('modal-completar').style.display = 'none';
     }
 
+    // Cerrar al hacer click fuera del modal
     document.getElementById('modal-completar').addEventListener('click', function(e) {
         if (e.target === this) cerrarModal();
     });
 
-    document.getElementById('modal-observaciones').addEventListener('input', function() {
-        document.getElementById('modal-char-count').textContent = this.value.length;
-    });
+    // Contador de caracteres del modal
+    const textarea = document.getElementById('modal-observaciones');
+    const counter  = document.getElementById('modal-char-count');
+    textarea.addEventListener('input', () => counter.textContent = textarea.value.length);
 </script>
 @endpush
 
