@@ -1,6 +1,6 @@
-CREATE DATABASE SIGEMPI_DB
-GO
-USE SIGEMPI_DB
+--CREATE DATABASE SIGEMPI_DB
+--GO
+--USE SIGEMPI_DB
 
 CREATE TABLE Users
 (
@@ -8,19 +8,19 @@ ID_User int IDENTITY(1,1) PRIMARY KEY,
 Usuario varchar(50) UNIQUE not null,
 Rol varchar(20) CHECK(Rol IN('Coordinador','Tecnico')),
 Password_Hash varchar(200) not null,
--- Hash para agregarle un encriptado a las contraseñas
-Fecha_Creacion datetime DEFAULT GETDATE() -- Para saber cuándo se registró el usuario
+-- Hash para agregarle un encriptado a las contraseï¿½as
+Fecha_Creacion datetime DEFAULT GETDATE() -- Para saber cuï¿½ndo se registrï¿½ el usuario
 )
 
 CREATE TABLE Equipos
 (
 ID_Equipo int IDENTITY(1,1) PRIMARY KEY,
-Codigo_Inventario varchar(50) UNIQUE not null, -- El código de la viñeta física de la institución
+Codigo_Inventario varchar(50) UNIQUE not null, -- El cï¿½digo de la viï¿½eta fï¿½sica de la instituciï¿½n
 Tipo varchar(30) CHECK(Tipo IN('Escritorio','Laptop','Servidor','Impresora','Plotter')) not null,
 Ubicacion varchar(300) not null,
 Marca varchar(60),
 Modelo varchar(100),
-Estado varchar(50) CHECK(Estado IN ('Dañado', 'Activo','Bodega','Inactivo','De Baja')) not null,
+Estado varchar(50) CHECK(Estado IN ('Daï¿½ado', 'Activo','Bodega','Inactivo','De Baja')) not null,
 )
 
 CREATE TABLE Mantenimientos
@@ -32,5 +32,5 @@ Fecha_Programada date,
 Fecha_Atencion date null,
 Estado_Mantenimiento varchar(20) DEFAULT 'Programado' CHECK(Estado_Mantenimiento IN('Programado', 'Completado', 'Reprogramado', 'Cancelado')) not null,
 Observaciones varchar(1000),
-Fecha_Registro datetime DEFAULT GETDATE() -- Cuándo se ingresó este registro al sistema
+Fecha_Registro datetime DEFAULT GETDATE() -- Cuï¿½ndo se ingresï¿½ este registro al sistema
 )
