@@ -146,7 +146,7 @@
                                         class="btn btn-primary"
                                         style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)"
                                         onclick="abrirModal({{ $a->ID_Mantenimiento }}, '{{ addslashes($a->Codigo_Inventario) }}', '{{ addslashes($a->Observaciones ?? '') }}')">
-                                        Completar
+                                        Registrar
                                     </button>
                                 </td>
                             </tr>
