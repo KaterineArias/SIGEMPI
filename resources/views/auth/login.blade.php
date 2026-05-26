@@ -10,6 +10,7 @@
 
     {{-- Panel izquierdo --}}
     <div class="login-brand">
+        <div class="login-brand-accent"></div>
         <div class="login-brand-logo" style="flex-direction:column;align-items:center;gap:var(--space-4)">
             <img src="{{ asset('img/logo.png') }}" alt="Logo SIGEMPI" width="100" height="100">
             <h1>SIGEMPI</h1>

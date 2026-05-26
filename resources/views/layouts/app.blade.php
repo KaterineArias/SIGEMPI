@@ -15,7 +15,7 @@
     (function(){
         const t = document.querySelector('[data-theme-toggle]');
         const r = document.documentElement;
-        let d = localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+        let d = localStorage.getItem('theme') || 'light';
         r.setAttribute('data-theme', d);
         if (t) {
             t.addEventListener('click', () => {
