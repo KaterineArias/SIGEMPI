@@ -25,14 +25,14 @@
         </a>
 
         <span class="nav-section-label">Mi trabajo</span>
-        <a href="{{ route('mantenimientos.mis-asignaciones') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            Mis asignaciones
-        </a>
-        <a href="{{ route('mantenimientos.create') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Registrar intervención
-        </a>
+            <a href="{{ route('dashboard.tecnico') }}" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+                Mis asignaciones
+            </a>
+            <a href="{{ route('dashboard.tecnico') }}" class="nav-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Registrar intervención
+            </a>
         <a href="{{ route('equipos.index') }}" class="nav-link">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
             Ver equipos
@@ -64,7 +64,7 @@
                 <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
                 </button>
-                <a href="{{ route('mantenimientos.create') }}" class="btn btn-primary">
+                <a href="{{ route('dashboard.tecnico') }}" class="btn btn-primary">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Registrar intervención
                 </a>
@@ -126,8 +126,24 @@
                             @foreach($asignaciones as $a)
                             <tr>
                                 <td><strong>{{ $a->Codigo_Inventario }}</strong></td>
-                                <td>{{ $a->Tipo }}</td>
-                                <td class="td-muted">{{ $a->Ubicacion }}</td>
+                                        <td>
+                                            @if(str_starts_with($a->Codigo_Inventario, 'LAP'))
+                                                Laptop
+                                            @elseif(str_starts_with($a->Codigo_Inventario, 'DES'))
+                                                Desktop
+                                            @elseif(str_starts_with($a->Codigo_Inventario, 'IMP'))
+                                                Impresora
+                                            @elseif(str_starts_with($a->Codigo_Inventario, 'SER'))
+                                                Servidor
+                                            @elseif(str_starts_with($a->Codigo_Inventario, 'SWI'))
+                                                Switch de Red
+                                            @elseif(str_starts_with($a->Codigo_Inventario, 'PRO'))
+                                                Proyector
+                                            @else
+                                                {{ $a->Tipo }}
+                                            @endif
+                                        </td>
+                                        <td class="td-muted">{{ $a->Ubicacion }}</td>
                                 <td>{{ \Carbon\Carbon::parse($a->Fecha_Programada)->format('d/m/Y') }}</td>
                                 <td>
                                     <span class="badge badge-{{ strtolower($a->Estado_Mantenimiento) }}">
@@ -135,10 +151,10 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="{{ route('mantenimientos.show', $a->ID_Mantenimiento) }}"
-                                       class="btn btn-primary" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
-                                        Registrar
-                                    </a>
+                                        <a href="{{ route('intervenciones.create', $a->ID_Mantenimiento) }}"
+                                        class="btn btn-primary" style="padding:var(--space-1) var(--space-3); font-size:var(--text-xs); background-color: #f97316; border-color: #f97316;">
+                                            Registrar
+                                        </a>
                                 </td>
                             </tr>
                             @endforeach
@@ -146,6 +162,14 @@
                     </table>
                 @endif
             </div>
+
+                 <div class="text-right mt-3" style="text-align: right; margin-top: 15px;">
+                        <a href="#" class="btn btn-secondary" style="background-color: #6c757d; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: var(--text-sm);">
+                            Ver todas mis asignaciones ({{ $stats['mis_programados'] }}) →
+                        </a>
+                    </div>
+
+
         </main>
     </div>
 </div>

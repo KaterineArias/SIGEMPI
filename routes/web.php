@@ -4,6 +4,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MantenimientoController;
+use App\Http\Controllers\IntervencionController; // ← Tu controlador importado
 use Illuminate\Support\Facades\Route;
 
 // ── Autenticación ────────────────────────────────────────
@@ -33,13 +34,21 @@ Route::middleware(['autenticado'])->group(function () {
         ->name('dashboard.tecnico');
 
     // ── Mantenimientos ───────────────────────────────────
-    // ✅ Solo UNA vez, dentro del middleware
     Route::resource('mantenimientos', MantenimientoController::class);
 
-    // Rutas extra que el resource NO genera
     Route::get('/mis-asignaciones', function () {
         return 'Mis asignaciones — próximamente';
     })->name('mantenimientos.mis-asignaciones');
+
+    // ── Intervenciones (Módulo de Oswaldo) ───────────────
+    // Solo los Técnicos pueden registrar intervenciones en los mantenimientos
+    Route::get('/intervenciones/crear/{id_mantenimiento}', [IntervencionController::class, 'create'])
+        ->name('intervenciones.create')
+        ->middleware('rol:Tecnico');
+
+    Route::post('/intervenciones/guardar', [IntervencionController::class, 'store'])
+        ->name('intervenciones.store')
+        ->middleware('rol:Tecnico');
 
     // ── Otros módulos (stubs) ────────────────────────────
     Route::get('/equipos',   fn() => 'Módulo Equipos — próximamente')->name('equipos.index');
