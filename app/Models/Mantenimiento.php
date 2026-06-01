@@ -8,14 +8,14 @@ class Mantenimiento extends Model
 {
     protected $table = 'Mantenimientos';
     protected $primaryKey = 'ID_Mantenimiento';
-    public $timestamps = false; // Desactiva created_at y updated_at de Laravel
+    public $timestamps = false; 
 
     protected $fillable = [
         'ID_Equipo',
         'ID_Tecnico',
         'Fecha_Programada',
-        'Estado_Mantenimiento',
-        'Observaciones'
+        'ID_EstadoMantenimiento', // Actualizado: Llave foránea del catálogo
+        'Fecha_Ingreso'           // Añadido: Para registrar la auditoría de creación
     ];
 
     // Relación con el Equipo
@@ -28,5 +28,11 @@ class Mantenimiento extends Model
     public function tecnico()
     {
         return $this->belongsTo(User::class, 'ID_Tecnico', 'ID_User');
+    }
+
+    // Nueva Relación con el Catálogo de Estados de Mantenimiento
+    public function estadoMantenimiento()
+    {
+        return $this->belongsTo(CatalogoEstadoMantenimiento::class, 'ID_EstadoMantenimiento', 'ID_EstadoMantenimiento');
     }
 }

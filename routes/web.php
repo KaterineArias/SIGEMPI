@@ -53,5 +53,8 @@ Route::middleware(['autenticado'])->group(function () {
     // ── Otros módulos (stubs) ────────────────────────────
     Route::get('/equipos',   fn() => 'Módulo Equipos — próximamente')->name('equipos.index');
     Route::resource('usuarios', UserController::class)->middleware('rol:Coordinador');
-    Route::get('/reportes',  fn() => 'Módulo Reportes — próximamente')->name('reportes.index');
+    // ── Reportería Estratégica (Módulo de Oswaldo) ───────────────
+Route::get('/reportes', [App\Http\Controllers\ReporteController::class, 'index'])
+    ->name('reportes.index')
+    ->middleware('rol:Coordinador'); // Solo el Coordinador tiene acceso a las métricas del parque
 });

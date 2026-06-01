@@ -15,8 +15,10 @@ class User extends Authenticatable
     public    $timestamps = false;
 
     protected $fillable = [
+        'ID_Rol',            // Actualizado: Foránea del Rol
+        'ID_EstadoUsuario',  // Añadido: Foránea del Estado del usuario
         'Usuario',
-        'Rol',
+        'Correo_User',       // Añadido: Correo real de la BD
         'Password_Hash',
     ];
 
@@ -27,5 +29,11 @@ class User extends Authenticatable
     public function getAuthPassword()
     {
         return $this->Password_Hash;
+    }
+
+    // Nueva Relación: Un Usuario pertenece a un Rol
+    public function rol()
+    {
+        return $this->belongsTo(RolesUser::class, 'ID_Rol', 'ID_Rol');
     }
 }

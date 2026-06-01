@@ -24,26 +24,22 @@
             Dashboard
         </a>
 
-        <span class="nav-section-label">Mi trabajo</span>
-            <a href="{{ route('dashboard.tecnico') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                Mis asignaciones
-            </a>
-            <a href="{{ route('dashboard.tecnico') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                Registrar intervención
-            </a>
-        <a href="{{ route('equipos.index') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            Ver equipos
+        <span class="nav-section-label">Mi Trabajo</span>
+        <a href="{{ route('dashboard.tecnico', ['filtro' => 'pendientes']) }}" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><polyline points="12 6 12 12 16 14"/></svg>
+            Mis asignaciones
+        </a>
+        <a href="{{ route('dashboard.tecnico', ['filtro' => 'completados']) }}" class="nav-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 4 12 14.01 9 11.01"/><path d="M22 11v9a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Historial de Cierre
         </a>
 
         <div class="sidebar-footer">
             <div class="user-chip">
-                <div class="user-avatar">{{ strtoupper(substr(session('usuario'), 0, 2)) }}</div>
+                <div class="user-avatar" style="background: var(--teal-600);">{{ strtoupper(substr(session('usuario', 'TE'), 0, 2)) }}</div>
                 <div class="user-info">
-                    <div class="user-name">{{ session('usuario') }}</div>
-                    <div class="user-role">{{ session('rol') }}</div>
+                    <div class="user-name">{{ session('usuario', 'Técnico') }}</div>
+                    <div class="user-role">{{ session('rol', 'Tecnico') }}</div>
                 </div>
             </div>
             <form method="POST" action="{{ route('logout') }}" style="margin-top:var(--space-3)">
@@ -56,120 +52,109 @@
         </div>
     </aside>
 
-    {{-- MAIN --}}
+    {{-- MAIN CONTENT --}}
     <div class="main-content">
         <header class="topbar">
-            <span class="topbar-title">Dashboard</span>
-            <div class="topbar-actions">
-                <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-                </button>
-                <a href="{{ route('dashboard.tecnico') }}" class="btn btn-primary">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                    Registrar intervención
-                </a>
-            </div>
+            <span class="topbar-title">Panel Técnico de Campo</span>
         </header>
 
         <main class="page-body">
             <div class="page-heading">
                 <h1>Hola, {{ session('usuario') }}</h1>
-                <p>Estas son tus asignaciones — {{ \Carbon\Carbon::now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
+                <p>Estas son tus asignaciones de soporte técnico — {{ now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
             </div>
 
-            {{-- KPIs --}}
+            {{-- KPIs CLIQUEABLES DEL TÉCNICO --}}
             <div class="kpi-grid">
-                <div class="kpi-card">
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'pendientes']) }}" class="kpi-card" style="text-decoration:none; color:inherit;">
                     <div class="kpi-icon orange">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     </div>
-                    <div class="kpi-value">{{ $stats['mis_programados'] }}</div>
+                    <div class="kpi-value">{{ $stats['mis_programados'] ?? 0 }}</div>
                     <div class="kpi-label">Pendientes asignados</div>
-                </div>
-                <div class="kpi-card">
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'completados']) }}" class="kpi-card" style="text-decoration:none; color:inherit;">
                     <div class="kpi-icon green">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
-                    <div class="kpi-value">{{ $stats['mis_completados'] }}</div>
+                    <div class="kpi-value">{{ $stats['mis_completados'] ?? 0 }}</div>
                     <div class="kpi-label">Completados en total</div>
-                </div>
-                <div class="kpi-card">
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'este_mes']) }}" class="kpi-card" style="text-decoration:none; color:inherit;">
                     <div class="kpi-icon teal">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     </div>
-                    <div class="kpi-value">{{ $stats['mis_este_mes'] }}</div>
+                    <div class="kpi-value">{{ $stats['mis_este_mes'] ?? 0 }}</div>
                     <div class="kpi-label">Asignados este mes</div>
-                </div>
+                </a>
             </div>
 
-            {{-- Tabla de asignaciones --}}
-            <p class="section-title">Mis próximas asignaciones</p>
+            {{-- TITULO DINÁMICO DE LA TABLA --}}
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem; margin-top:2rem;">
+                <p class="section-title" style="margin:0; font-weight:bold;">
+                    @if(request('filtro'))
+                        Listado de Órdenes: {{ ucwords(request('filtro')) }}
+                    @else
+                        Mis próximas asignaciones pendientes
+                    @endif
+                </p>
+                
+                @if(request('filtro'))
+                    <a href="{{ route('dashboard.tecnico') }}" style="font-size:12px; color:#da6714; text-decoration:none; padding:6px 12px; border:1px solid #da6714; border-radius:8px; font-weight:bold; background:#fff;">
+                        ✕ Ver Asignaciones Actuales
+                    </a>
+                @endif
+            </div>
+
+            {{-- TABLA DE ASIGNACIONES --}}
             <div class="table-wrapper">
                 @if($asignaciones->isEmpty())
                     <div class="empty-state">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                        <p>No tienes mantenimientos asignados por ahora.</p>
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        <p>No tienes mantenimientos registrados en esta sección.</p>
                     </div>
                 @else
                     <table>
                         <thead>
                             <tr>
-                                <th>Código</th>
-                                <th>Tipo</th>
-                                <th>Ubicación</th>
-                                <th>Fecha programada</th>
-                                <th>Estado</th>
-                                <th>Acción</th>
+                                <th>Código Inv.</th>
+                                <th>Hardware</th>
+                                <th>Ubicación Sede</th>
+                                <th>Fecha Programada</th>
+                                <th>Estado Mantenimiento</th>
+                                @if(!request('filtro') || request('filtro') === 'pendientes')
+                                    <th>Acción</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($asignaciones as $a)
+                            @foreach($asignaciones as $m)
                             <tr>
-                                <td><strong>{{ $a->Codigo_Inventario }}</strong></td>
-                                        <td>
-                                            @if(str_starts_with($a->Codigo_Inventario, 'LAP'))
-                                                Laptop
-                                            @elseif(str_starts_with($a->Codigo_Inventario, 'DES'))
-                                                Desktop
-                                            @elseif(str_starts_with($a->Codigo_Inventario, 'IMP'))
-                                                Impresora
-                                            @elseif(str_starts_with($a->Codigo_Inventario, 'SER'))
-                                                Servidor
-                                            @elseif(str_starts_with($a->Codigo_Inventario, 'SWI'))
-                                                Switch de Red
-                                            @elseif(str_starts_with($a->Codigo_Inventario, 'PRO'))
-                                                Proyector
-                                            @else
-                                                {{ $a->Tipo }}
-                                            @endif
-                                        </td>
-                                        <td class="td-muted">{{ $a->Ubicacion }}</td>
-                                <td>{{ \Carbon\Carbon::parse($a->Fecha_Programada)->format('d/m/Y') }}</td>
+                                <td><strong>N° {{ $m->Codigo_Inventario }}</strong></td>
+                                <td><span class="badge" style="background:#e0f2fe; color:#0369a1;">{{ $m->Nombre_Tipo }} ({{ $m->Marca }} - {{ $m->Modelo }})</span></td>
+                                <td class="td-muted">{{ $m->Nombre_Edificio }} — {{ $m->Nombre_DepartamentoInst }}</td>
+                                <td>{{ \Carbon\Carbon::parse($m->Fecha_Programada)->format('d/m/Y') }}</td>
                                 <td>
-                                    <span class="badge badge-{{ strtolower($a->Estado_Mantenimiento) }}">
-                                        {{ $a->Estado_Mantenimiento }}
+                                    <span class="badge" style="background: {{ $m->ID_EstadoMantenimiento == 2 ? '#d1fae5; color:#065f46;' : '#ffedd5; color:#c2410c;' }}">
+                                        {{ $m->Nombre_EstadoMantenimiento }}
                                     </span>
                                 </td>
-                                <td>
-                                        <a href="{{ route('intervenciones.create', $a->ID_Mantenimiento) }}"
-                                        class="btn btn-primary" style="padding:var(--space-1) var(--space-3); font-size:var(--text-xs); background-color: #f97316; border-color: #f97316;">
-                                            Registrar
+                                {{-- Solo mostramos el botón de intervenir si la orden está pendiente --}}
+                                @if(!request('filtro') || request('filtro') === 'pendientes')
+                                    <td>
+                                       <a href="{{ route('intervenciones.create', ['id_mantenimiento' => $m->ID_Mantenimiento]) }}" class="btn btn-primary" style="background:#da6714; border-color:#da6714; padding:5px 10px; font-size:12px;">
+                                            Intervenir
                                         </a>
-                                </td>
+                                    </td>
+                                @endif
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
                 @endif
             </div>
-
-                 <div class="text-right mt-3" style="text-align: right; margin-top: 15px;">
-                        <a href="#" class="btn btn-secondary" style="background-color: #6c757d; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none; font-size: var(--text-sm);">
-                            Ver todas mis asignaciones ({{ $stats['mis_programados'] }}) →
-                        </a>
-                    </div>
-
-
         </main>
     </div>
 </div>
