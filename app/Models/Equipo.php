@@ -3,6 +3,9 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Models\TipoEquipo;
+use App\Models\EstadoEquipo;
+use App\Models\Ubicacion;
 
 class Equipo extends Model
 {
@@ -18,4 +21,19 @@ class Equipo extends Model
         'Modelo',
         'Estado',
     ];
+
+    public function tipo()
+    {
+        return $this->belongsTo(TipoEquipo::class, 'ID_Tipo', 'ID_Tipo');
+    }
+
+    public function estado()
+    {
+        return $this->belongsTo(EstadoEquipo::class, 'ID_Estado', 'ID_Estado');
+    }
+
+    public function ubicacion()
+    {
+        return $this->belongsTo(Ubicacion::class, 'ID_Ubicacion', 'ID_Ubicacion');
+    }
 }

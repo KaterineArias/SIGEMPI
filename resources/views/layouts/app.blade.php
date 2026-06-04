@@ -11,6 +11,7 @@
 </head>
 <body>
     @yield('body')
+    @yield('content')
     <script>
     (function(){
         const t = document.querySelector('[data-theme-toggle]');

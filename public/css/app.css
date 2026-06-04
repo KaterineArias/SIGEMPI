@@ -134,3 +134,57 @@ input, select, textarea { font: inherit; color: inherit; }
 .alert-success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
 [data-theme="dark"] .alert-error   { background: #3b1528; color: #f0abcc; border-color: #831843; }
 [data-theme="dark"] .alert-success { background: #14301e; color: #86efac; border-color: #166534; }
+
+/* Badges */
+.badge              { display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600; }
+.badge-green        { background:#dcfce7;color:#166534; }
+.badge-red          { background:#fee2e2;color:#991b1b; }
+.badge-blue         { background:#dbeafe;color:#1e40af; }
+.badge-gray         { background:#f3f4f6;color:#374151; }
+
+/* Botones tamaño pequeño */
+.btn-sm             { padding:4px 12px;font-size:12px; }
+.btn-danger         { background:#ef4444;color:#fff;border:none; }
+.btn-danger:hover   { background:#dc2626; }
+.btn-success        { background:#22c55e;color:#fff;border:none; }
+.btn-success:hover  { background:#16a34a; }
+
+/* Botón secundario — Historial */
+.btn-secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover {
+    background: #e5e7eb;
+    border-color: #9ca3af;
+}
+
+/* Danger y success con border-radius fijo */
+.btn-danger, .btn-success {
+    cursor: pointer;
+    border-radius: 8px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    transition: background 0.15s;
+}
+
+.btn-sm {
+    padding: 4px 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    border-radius: 8px;
+}
+
+.btn-activar, .btn-desactivar {
+    width: 90px;
+    justify-content: center;
+}

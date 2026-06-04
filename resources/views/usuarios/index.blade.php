@@ -1,5 +1,4 @@
 @extends('layouts.app')
-
 @section('title', 'Usuarios')
 
 @push('styles')
@@ -9,62 +8,8 @@
 @section('body')
 <div class="app-shell">
 
-    {{-- SIDEBAR --}}
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-bottom:var(--space-2)">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo SIGEMPI" width="64" height="64" style="object-fit:contain;border-radius:var(--radius-md)">
-                <span class="brand">SIGE<span>MPI</span></span>
-            </div>
-        </div>
+    @include('partials.sidebar')
 
-        <div>
-            <span class="nav-section-label">Principal</span>
-            <a href="{{ route('dashboard.coordinador') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                Dashboard
-            </a>
-
-            <span class="nav-section-label">Gestión</span>
-            <a href="{{ route('equipos.index') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-                Equipos
-            </a>
-            <a href="{{ route('usuarios.index') }}" class="nav-link active">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                Usuarios
-            </a>
-            <a href="{{ route('mantenimientos.index') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                Mantenimientos
-            </a>
-
-            <span class="nav-section-label">Reportes</span>
-            <a href="{{ route('reportes.index') }}" class="nav-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Reportes
-            </a>
-        </div>
-
-        <div class="sidebar-footer">
-            <div class="user-chip">
-                <div class="user-avatar">{{ strtoupper(substr(session('usuario'), 0, 2)) }}</div>
-                <div class="user-info">
-                    <div class="user-name">{{ session('usuario') }}</div>
-                    <div class="user-role">{{ session('rol') }}</div>
-                </div>
-            </div>
-            <form method="POST" action="{{ route('logout') }}" style="margin-top:var(--space-3)">
-                @csrf
-                <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:var(--text-xs)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Cerrar sesión
-                </button>
-            </form>
-        </div>
-    </aside>
-
-    {{-- MAIN --}}
     <div class="main-content">
         <header class="topbar">
             <span class="topbar-title">Usuarios</span>
@@ -80,72 +25,172 @@
         </header>
 
         <main class="page-body">
+
             <div class="page-heading">
-                <h1>Usuarios del sistema</h1>
-                <p>Gestión de accesos y roles</p>
+                <h1>Usuarios</h1>
+                <p>Gestión de cuentas del sistema</p>
             </div>
 
-            {{-- Mensaje de éxito --}}
+            {{-- Mensajes --}}
             @if(session('success'))
-                <div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">
+                <div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 16px;border-radius:8px;font-size:13px;margin-bottom:20px;">
                     {{ session('success') }}
                 </div>
             @endif
+            @if($errors->has('estado'))
+                <div class="alert alert-error" style="margin-bottom:16px;">
+                    {{ $errors->first('estado') }}
+                </div>
+            @endif
 
+            {{-- Búsqueda y filtros --}}
+            <form method="GET" action="{{ route('usuarios.index') }}"
+                  style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:20px;">
+
+                <input type="text" name="buscar" value="{{ request('buscar') }}"
+                       placeholder="Buscar por usuario o correo..."
+                       style="padding:7px 12px;border-radius:9px;border:1px solid var(--color-border);
+                              font-size:13px;background:var(--color-surface-2);min-width:220px;outline:none;">
+
+                <select name="rol" onchange="this.form.submit()"
+                        style="padding:7px 12px;border-radius:9px;border:1px solid var(--color-border);
+                               font-size:13px;background:var(--color-surface-2);cursor:pointer;">
+                    <option value="">— Todos los roles —</option>
+                    @foreach($roles as $r)
+                        <option value="{{ $r->ID_Rol }}" {{ request('rol') == $r->ID_Rol ? 'selected' : '' }}>
+                            {{ $r->Rol }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <select name="estado" onchange="this.form.submit()"
+                        style="padding:7px 12px;border-radius:9px;border:1px solid var(--color-border);
+                               font-size:13px;background:var(--color-surface-2);cursor:pointer;">
+                    <option value="">— Todos los estados —</option>
+                    @foreach($estados as $e)
+                        <option value="{{ $e->ID_EstadoUsuario }}" {{ request('estado') == $e->ID_EstadoUsuario ? 'selected' : '' }}>
+                            {{ $e->Estado }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+
+                @if(request()->hasAny(['buscar','rol','estado']))
+                    <a href="{{ route('usuarios.index') }}"
+                       style="font-size:13px;color:var(--color-text-muted);text-decoration:none;
+                              padding:7px 10px;border:1px solid var(--color-border);
+                              border-radius:9px;background:var(--color-surface-2);">
+                        ✕ Limpiar
+                    </a>
+                @endif
+            </form>
+
+            {{-- Tabla --}}
             <div class="table-wrapper">
                 @if($usuarios->isEmpty())
                     <div class="empty-state">
                         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        <p>No hay usuarios registrados aún.</p>
+                        <p>No se encontraron usuarios.</p>
                     </div>
                 @else
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>#</th>
-                                <th>Usuario</th>
-                                <th>Rol</th>
-                                <th>Fecha de creación</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($usuarios as $u)
-                            <tr>
-                                <td class="td-muted">{{ $loop->iteration }}</td>
-                                <td><strong>{{ $u->Usuario }}</strong></td>
-                                <td>
-                                    <span class="badge badge-{{ $u->Rol === 'Coordinador' ? 'blue' : 'orange' }}">
-                                        {{ $u->Rol }}
-                                    </span>
-                                </td>
-                                <td class="td-muted">{{ \Carbon\Carbon::parse($u->Fecha_Creacion)->format('d/m/Y') }}</td>
-                                <td>
-                                    <a href="{{ route('usuarios.edit', $u->ID_User) }}" class="btn btn-secondary" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Usuario</th>
+                            <th>Correo</th>
+                            <th>Rol</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($usuarios as $u)
+                        <tr>
+                            <td>{{ $u->ID_User }}</td>
+                            <td><span style="font-family:monospace;font-size:13px">{{ $u->Usuario }}</span></td>
+                            <td>{{ $u->Correo_User }}</td>
+                            <td>
+                                <span class="badge {{ $u->esCoordinador() ? 'badge-blue' : 'badge-gray' }}">
+                                    {{ $u->rol->Rol }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {{ $u->estaActivo() ? 'badge-green' : 'badge-red' }}">
+                                    {{ $u->estadoUsuario->Estado }}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+
+                                    {{-- Editar --}}
+                                    <a href="{{ route('usuarios.edit', $u->ID_User) }}"
+                                    class="btn btn-sm btn-primary">
                                         Editar
                                     </a>
-                                    @if($u->Usuario !== session('usuario'))
-                                        <form method="POST" action="{{ route('usuarios.destroy', $u->ID_User) }}" style="display:inline" onsubmit="return confirm('¿Eliminar usuario {{ $u->Usuario }}?')">
+
+                                    {{-- Historial --}}
+                                    <a href="{{ route('usuarios.historial', $u->ID_User) }}"
+                                    class="btn btn-sm btn-secondary">
+                                        Historial
+                                    </a>
+
+                                    {{-- Activar / Desactivar --}}
+                                    @if($u->ID_User !== session('id_user'))
+                                        <form method="POST"
+                                            action="{{ route('usuarios.estado', $u->ID_User) }}"
+                                            style="display:inline">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger" style="padding:var(--space-1) var(--space-3);font-size:var(--text-xs)">
-                                                Eliminar
-                                            </button>
+                                            @method('PATCH')
+                                            @if($u->estaActivo())
+                                                <input type="hidden" name="id_estado" value="{{ $idInactivo }}">
+                                                <button type="submit" class="btn btn-sm btn-danger btn-desactivar"
+                                                        onclick="return confirm('¿Desactivar a {{ $u->Usuario }}?')">
+                                                    Desactivar
+                                                </button>
+                                            @else
+                                                <input type="hidden" name="id_estado" value="{{ $idActivo }}">
+                                                <button type="submit" class="btn btn-sm btn-success btn-activar">
+                                                    Activar
+                                                </button>
+                                            @endif
                                         </form>
                                     @else
-                                        <span style="font-size:var(--text-xs);color:var(--color-text-muted);padding:var(--space-1) var(--space-3)">
-                                            (tú)
-                                        </span>
+                                        <span style="font-size:12px;color:var(--color-text-muted)">Tu cuenta</span>
                                     @endif
-                                </td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
+
+                                </div>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
                 @endif
             </div>
+
         </main>
     </div>
-
 </div>
 @endsection
+
+@push('scripts')
+<script>
+(function(){
+    const t = document.querySelector('[data-theme-toggle]');
+    const r = document.documentElement;
+    let d = localStorage.getItem('theme') || 'light';
+    r.setAttribute('data-theme', d);
+    if (t) {
+        t.addEventListener('click', () => {
+            d = d === 'dark' ? 'light' : 'dark';
+            r.setAttribute('data-theme', d);
+            localStorage.setItem('theme', d);
+            t.innerHTML = d === 'dark'
+                ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'
+                : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+        });
+    }
+})();
+</script>
+@endpush

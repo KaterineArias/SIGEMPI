@@ -24,9 +24,18 @@ class Mantenimiento extends Model
         return $this->belongsTo(Equipo::class, 'ID_Equipo', 'ID_Equipo');
     }
 
-    // Relación con el Técnico (Usuario)
     public function tecnico()
     {
         return $this->belongsTo(User::class, 'ID_Tecnico', 'ID_User');
+    }
+
+    public function estado()
+    {
+        return $this->belongsTo(CatalogoEstadoMantenimiento::class, 'ID_EstadoMantenimiento', 'ID_EstadoMantenimiento');
+    }
+
+    public function detalles()
+    {
+        return $this->hasMany(MantenimientoDetalle::class, 'ID_Mantenimiento', 'ID_Mantenimiento');
     }
 }

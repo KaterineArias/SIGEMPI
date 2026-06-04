@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Mantenimientos')
+@section('title', 'Equipos')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
@@ -12,7 +12,7 @@
 
     <div class="main-content">
         <header class="topbar">
-            <span class="topbar-title">Mantenimientos</span>
+            <span class="topbar-title">Equipos</span>
             <div class="topbar-actions">
                 <button class="theme-toggle" data-theme-toggle aria-label="Cambiar tema">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -22,14 +22,14 @@
 
         <main class="page-body">
             <div class="page-heading">
-                <h1>Mantenimientos</h1>
-                <p>Gestión y seguimiento de mantenimientos</p>
+                <h1>Equipos</h1>
+                <p>Inventario del parque informático</p>
             </div>
 
             {{-- TODO: implementar listado, filtros y acciones --}}
             <div class="empty-state" style="margin-top:60px">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-                <p>Módulo de mantenimientos — pendiente de implementar.</p>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+                <p>Módulo de equipos — pendiente de implementar.</p>
             </div>
         </main>
     </div>
