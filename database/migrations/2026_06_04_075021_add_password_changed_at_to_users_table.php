@@ -6,17 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::table('Users', function (Blueprint $table) {
-            $table->timestamp('Password_Changed_At')->nullable()->after('Password_Hash');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::table('Users', function (Blueprint $table) {
-            $table->dropColumn('Password_Changed_At');
+        Schema::table('users', function (Blueprint $table) {
+            //
         });
     }
 };

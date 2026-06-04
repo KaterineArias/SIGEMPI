@@ -188,6 +188,44 @@ class UserController extends Controller
                          ->with('success', "Usuario {$usuario->Usuario} marcado como {$nuevoEstado}.");
     }
 
+    // Ver formulario de perfil
+    public function perfilForm()
+    {
+        $usuario = User::find(session('id_user'));
+        return view('perfil.index', compact('usuario'));
+    }
+
+    //  Guardar cambios de perfil 
+    public function perfilUpdate(Request $request)
+    {
+        $request->validate([
+            'password_actual'   => 'required|string',
+            'password'          => 'required|string|min:8|confirmed',
+        ], [
+            'password_actual.required' => 'Debes ingresar tu contraseña actual.',
+            'password.required'        => 'La nueva contraseña es obligatoria.',
+            'password.min'             => 'Mínimo 8 caracteres.',
+            'password.confirmed'       => 'Las contraseñas no coinciden.',
+        ]);
+
+        $usuario = User::find(session('id_user'));
+
+        // Verificar que la contraseña actual sea correcta
+        if (!Hash::check($request->password_actual, $usuario->Password_Hash)) {
+            return back()
+                ->withErrors(['password_actual' => 'La contraseña actual es incorrecta.'])
+                ->withInput();
+        }
+
+        $usuario->Password_Hash = Hash::make($request->password);
+        $usuario->Primer_Login  = false;
+        $usuario->Password_Changed_At = now();
+        $usuario->save();
+
+        return redirect()->route('perfil.form')
+                        ->with('success', 'Contraseña actualizada correctamente.');
+    }
+
     // Historial consolidado
     public function historial(User $usuario)
     {

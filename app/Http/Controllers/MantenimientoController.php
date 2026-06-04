@@ -115,9 +115,11 @@ class MantenimientoController extends Controller
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
             ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
             ->join('Catalogo_EstadoMantenimiento',
-                   'Mantenimientos.ID_EstadoMantenimiento', '=',
-                   'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+                'Mantenimientos.ID_EstadoMantenimiento', '=',
+                'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
             ->where('Mantenimientos.ID_Tecnico', session('id_user'))
+            ->whereIn('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
+                    ['Programado', 'Reprogramado'])   // ← solo pendientes
             ->select(
                 'Mantenimientos.*',
                 'Equipos.Codigo_Inventario',
@@ -129,9 +131,8 @@ class MantenimientoController extends Controller
             ->orderByRaw("CASE Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento
                 WHEN 'Programado'   THEN 1
                 WHEN 'Reprogramado' THEN 2
-                WHEN 'Completado'   THEN 3
-                WHEN 'Cancelado'    THEN 4
-                ELSE 5 END")
+                ELSE 3 END")
+            ->orderBy('Mantenimientos.Fecha_Programada')
             ->get();
 
         return view('mantenimientos.mis-asignaciones', compact('asignaciones'));
@@ -140,7 +141,7 @@ class MantenimientoController extends Controller
     public function cambiarEstado(Request $request, Mantenimiento $mantenimiento)
     {
         $nuevoEstado = $request->estado;
-        $rol = session('rol');
+        $rol         = session('rol');
 
         $estadosCoordinador = ['Reprogramado', 'Cancelado'];
         $estadosTecnico     = ['Completado'];
@@ -158,7 +159,6 @@ class MantenimientoController extends Controller
             }
         }
 
-        // Estado actual via catálogo
         $estadoActual = DB::table('Catalogo_EstadoMantenimiento')
             ->where('ID_EstadoMantenimiento', $mantenimiento->ID_EstadoMantenimiento)
             ->value('Nombre_EstadoMantenimiento');
@@ -167,7 +167,6 @@ class MantenimientoController extends Controller
             return back()->withErrors(['estado' => 'Este mantenimiento ya no puede modificarse.']);
         }
 
-        // Nuevo ID de estado
         $idNuevoEstado = DB::table('Catalogo_EstadoMantenimiento')
             ->where('Nombre_EstadoMantenimiento', $nuevoEstado)
             ->value('ID_EstadoMantenimiento');
@@ -178,12 +177,29 @@ class MantenimientoController extends Controller
             $request->validate([
                 'Fecha_Programada' => 'required|date|after_or_equal:today',
             ]);
-            $data['Fecha_Programada']    = $request->Fecha_Programada;
+            $data['Fecha_Programada']     = $request->Fecha_Programada;
             $data['Fecha_Reprogramacion'] = now();
         }
 
         if ($nuevoEstado === 'Completado') {
+            $request->validate([
+                'Accion_Realizada'       => 'required|string|max:500',
+                'Observaciones_Tecnicas' => 'nullable|string|max:1000',
+            ], [
+                'Accion_Realizada.required' => 'Debes describir la acción realizada.',
+                'Accion_Realizada.max'      => 'Máximo 500 caracteres.',
+            ]);
+
             $data['Fecha_Cierre'] = now();
+
+            // Guardar detalle del mantenimiento
+            DB::table('Mantenimiento_Detalle')->insert([
+                'ID_Mantenimiento'       => $mantenimiento->ID_Mantenimiento,
+                'ID_TecnicoIntervino'    => session('id_user'),
+                'Fecha_Registro'         => now(),
+                'Accion_Realizada'       => $request->Accion_Realizada,
+                'Observaciones_Tecnicas' => $request->Observaciones_Tecnicas,
+            ]);
         }
 
         DB::table('Mantenimientos')
@@ -195,7 +211,61 @@ class MantenimientoController extends Controller
             : 'mantenimientos.index';
 
         return redirect()->route($ruta)
-                         ->with('success', 'Mantenimiento actualizado correctamente.');
+                        ->with('success', 'Mantenimiento actualizado correctamente.');
+    }
+
+    public function historialCierres(Request $request)
+    {
+        $query = DB::table('Mantenimientos')
+            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+            ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
+            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Catalogo_EstadoMantenimiento',
+                'Mantenimientos.ID_EstadoMantenimiento', '=',
+                'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+            ->where('Mantenimientos.ID_Tecnico', session('id_user'))
+            ->whereIn('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
+                    ['Completado', 'Cancelado']);
+
+        if ($request->filled('estado')) {
+            $query->where('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
+                        $request->estado);
+        }
+
+        // Filtro por rango de fechas
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('Mantenimientos.Fecha_Cierre', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('Mantenimientos.Fecha_Cierre', '<=', $request->fecha_hasta);
+        }
+
+        $cierres = $query
+            ->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
+            ->select(
+                'Mantenimientos.*',
+                'Equipos.Codigo_Inventario',
+                'Tipos_Equipo.Nombre_Tipo as Tipo',
+                'Ubicacion.NombreSede as Ubicacion',
+                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento as Estado_Mantenimiento'
+            )
+            ->get();
+
+        // Contadores para tarjetas resumen
+        $totalCierres    = $cierres->count();
+        $totalCompletado = $cierres->where('Estado_Mantenimiento', 'Completado')->count();
+        $totalCancelado  = $cierres->where('Estado_Mantenimiento', 'Cancelado')->count();
+
+        // Detalles por mantenimiento para el modal
+        $detalles = DB::table('Mantenimiento_Detalle')
+            ->whereIn('ID_Mantenimiento', $cierres->pluck('ID_Mantenimiento'))
+            ->orderBy('Fecha_Registro', 'desc')
+            ->get()
+            ->groupBy('ID_Mantenimiento');
+
+        return view('mantenimientos.historial-cierres', compact(
+            'cierres', 'totalCierres', 'totalCompletado', 'totalCancelado', 'detalles'
+        ));
     }
 
     public function show(Mantenimiento $mantenimiento) {}

@@ -5,56 +5,10 @@
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
 @endpush
 
-@section('content')
+@section('body')
 <div class="app-shell">
 
-    {{-- SIDEBAR --}}
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:var(--space-2);padding-bottom:var(--space-2)">
-                <img src="{{ asset('img/logo.png') }}" alt="Logo SIGEMPI" width="64" height="64"
-                    style="object-fit:contain;border-radius:var(--radius-md);">
-                <span class="brand">SIGE<span>MPI</span></span>
-            </div>
-        </div>
-
-        <span class="nav-section-label">Principal</span>
-        <a href="{{ route('dashboard.tecnico') }}" class="nav-link active">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-            Dashboard
-        </a>
-
-        <span class="nav-section-label">Mi trabajo</span>
-        <a href="{{ route('mantenimientos.mis-asignaciones') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            Mis asignaciones
-        </a>
-        <a href="{{ route('mantenimientos.create') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            Registrar intervención
-        </a>
-        <a href="{{ route('equipos.index') }}" class="nav-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-            Ver equipos
-        </a>
-
-        <div class="sidebar-footer">
-            <div class="user-chip">
-                <div class="user-avatar">{{ strtoupper(substr(session('usuario'), 0, 2)) }}</div>
-                <div class="user-info">
-                    <div class="user-name">{{ session('usuario') }}</div>
-                    <div class="user-role">{{ session('rol') }}</div>
-                </div>
-            </div>
-            <form method="POST" action="{{ route('logout') }}" style="margin-top:var(--space-3)">
-                @csrf
-                <button type="submit" class="btn btn-ghost" style="width:100%;justify-content:center;font-size:var(--text-xs)">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    Cerrar sesión
-                </button>
-            </form>
-        </div>
-    </aside>
+    @include('partials.sidebar')
 
     {{-- MAIN --}}
     <div class="main-content">
@@ -77,7 +31,6 @@
                 <p>Estas son tus asignaciones — {{ \Carbon\Carbon::now()->translatedFormat('l, d \d\e F \d\e Y') }}</p>
             </div>
 
-            {{-- ✅ Fuera del page-heading --}}
             @if(session('success'))
                 <div style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">
                     {{ session('success') }}
@@ -175,7 +128,11 @@
                 <label for="modal-observaciones">Observaciones</label>
                 <textarea id="modal-observaciones" name="Observaciones" rows="4"
                           maxlength="1000"
-                          placeholder="Describe el trabajo realizado..."></textarea>
+                          placeholder="Describe el trabajo realizado..."
+                          style="padding:var(--space-2) var(--space-3);border:1px solid var(--color-border);
+                                 border-radius:var(--radius-md);font-size:var(--text-sm);
+                                 font-family:inherit;background:var(--color-bg);
+                                 color:var(--color-text);outline:none;resize:vertical;width:100%"></textarea>
                 <span style="font-size:11px;color:var(--color-text-muted);text-align:right">
                     <span id="modal-char-count">0</span>/1000
                 </span>
@@ -194,29 +151,41 @@
     </div>
 </div>
 
+@endsection
+
 @push('scripts')
 <script>
-    function abrirModal(id, codigo, observaciones) {
-        document.getElementById('modal-subtitulo').textContent = 'Equipo: ' + codigo;
-        document.getElementById('form-completar').action = '/mantenimientos/' + id + '/estado';
-        const textarea = document.getElementById('modal-observaciones');
-        textarea.value = observaciones;
-        document.getElementById('modal-char-count').textContent = observaciones.length;
-        document.getElementById('modal-completar').style.display = 'flex';
-    }
-
-    function cerrarModal() {
-        document.getElementById('modal-completar').style.display = 'none';
-    }
-
-    document.getElementById('modal-completar').addEventListener('click', function(e) {
-        if (e.target === this) cerrarModal();
+(function(){
+    const t = document.querySelector('[data-theme-toggle]');
+    const r = document.documentElement;
+    let d = localStorage.getItem('theme') || 'light';
+    r.setAttribute('data-theme', d);
+    if (t) t.addEventListener('click', () => {
+        d = d === 'dark' ? 'light' : 'dark';
+        r.setAttribute('data-theme', d);
+        localStorage.setItem('theme', d);
     });
+})();
 
-    document.getElementById('modal-observaciones').addEventListener('input', function() {
-        document.getElementById('modal-char-count').textContent = this.value.length;
-    });
+function abrirModal(id, codigo, observaciones) {
+    document.getElementById('modal-subtitulo').textContent = 'Equipo: ' + codigo;
+    document.getElementById('form-completar').action = '/mantenimientos/' + id + '/estado';
+    const textarea = document.getElementById('modal-observaciones');
+    textarea.value = observaciones;
+    document.getElementById('modal-char-count').textContent = observaciones.length;
+    document.getElementById('modal-completar').style.display = 'flex';
+}
+
+function cerrarModal() {
+    document.getElementById('modal-completar').style.display = 'none';
+}
+
+document.getElementById('modal-completar').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+
+document.getElementById('modal-observaciones').addEventListener('input', function() {
+    document.getElementById('modal-char-count').textContent = this.value.length;
+});
 </script>
 @endpush
-
-@endsection

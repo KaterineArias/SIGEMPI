@@ -7,43 +7,95 @@
         </div>
     </div>
 
-    <span class="nav-section-label">Principal</span>
-    <a href="{{ session('rol') === 'Coordinador' ? route('dashboard.coordinador') : route('dashboard.tecnico') }}"
-       class="nav-link {{ request()->routeIs('dashboard.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-        Dashboard
-    </a>
-
-    <span class="nav-section-label">Gestión</span>
-    <a href="{{ route('equipos.index') }}"
-       class="nav-link {{ request()->routeIs('equipos.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
-        Equipos
-    </a>
-
     @if(session('rol') === 'Coordinador')
-    <a href="{{ route('usuarios.index') }}"
-       class="nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Usuarios
-    </a>
+    {{-- COORDINADOR --}}
+
+        <span class="nav-section-label">Principal</span>
+        <a href="{{ route('dashboard.coordinador') }}"
+           class="nav-link {{ request()->routeIs('dashboard.coordinador') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+
+        <span class="nav-section-label">Gestión</span>
+        <a href="{{ route('equipos.index') }}"
+           class="nav-link {{ request()->routeIs('equipos.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Equipos
+        </a>
+        <a href="{{ route('usuarios.index') }}"
+           class="nav-link {{ request()->routeIs('usuarios.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Usuarios
+        </a>
+        <a href="{{ route('mantenimientos.index') }}"
+           class="nav-link {{ request()->routeIs('mantenimientos.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            Mantenimientos
+        </a>
+
+        <span class="nav-section-label">Reportes</span>
+        <a href="{{ route('reportes.index') }}"
+           class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Reportes
+        </a>
+
+        <span class="nav-section-label">Cuenta</span>
+        <a href="{{ route('perfil.form') }}"
+        class="nav-link {{ request()->routeIs('perfil.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi perfil
+        </a>
+
+    @else
+    {{-- TÉCNICO --}}
+
+        <span class="nav-section-label">Principal</span>
+        <a href="{{ route('dashboard.tecnico') }}"
+           class="nav-link {{ request()->routeIs('dashboard.tecnico') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            Dashboard
+        </a>
+
+        <span class="nav-section-label">Mi trabajo</span>
+        <a href="{{ route('mantenimientos.mis-asignaciones') }}"
+            class="nav-link {{ request()->routeIs('mantenimientos.mis-asignaciones') ? 'active' : '' }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                </svg>
+                Mis asignaciones
+                @if($pendientesSidebar > 0)
+                    <span style="margin-left:auto;background:#f97316;color:#fff;
+                                font-size:11px;font-weight:700;border-radius:20px;
+                                padding:1px 7px;line-height:1.6">
+                        {{ $pendientesSidebar }}
+                    </span>
+                @endif
+        </a>
+        <a href="{{ route('mantenimientos.historial') }}"
+           class="nav-link {{ request()->routeIs('mantenimientos.historial') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            Historial de cierres
+        </a>
+
+        <span class="nav-section-label">Consulta</span>
+        <a href="{{ route('equipos.index') }}"
+           class="nav-link {{ request()->routeIs('equipos.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            Equipos
+        </a>
+
+        <span class="nav-section-label">Cuenta</span>
+        <a href="{{ route('perfil.form') }}"
+        class="nav-link {{ request()->routeIs('perfil.*') ? 'active' : '' }}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi perfil
+        </a>
+
     @endif
 
-    <a href="{{ route('mantenimientos.index') }}"
-       class="nav-link {{ request()->routeIs('mantenimientos.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-        Mantenimientos
-    </a>
-
-    @if(session('rol') === 'Coordinador')
-    <span class="nav-section-label">Reportes</span>
-    <a href="{{ route('reportes.index') }}"
-       class="nav-link {{ request()->routeIs('reportes.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-        Reportes
-    </a>
-    @endif
-
+    {{-- Footer común --}}
     <div class="sidebar-footer">
         <div class="user-chip">
             <div class="user-avatar">{{ strtoupper(substr(session('usuario'), 0, 2)) }}</div>

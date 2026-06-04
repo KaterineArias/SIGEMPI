@@ -43,40 +43,59 @@ Route::middleware(['autenticado'])->group(function () {
         ->middleware('rol:Tecnico')
         ->name('dashboard.tecnico');
 
-    // Mantenimientos
-    Route::resource('mantenimientos', MantenimientoController::class);
+    // ── Mantenimientos ── rutas específicas ANTES del resource ──────────────
+    Route::get('/mantenimientos/historial-cierres',
+        [MantenimientoController::class, 'historialCierres'])
+        ->name('mantenimientos.historial-cierres');
+
+    Route::get('/mis-asignaciones',
+        [MantenimientoController::class, 'misAsignaciones'])
+        ->name('mantenimientos.mis-asignaciones');
+
+    Route::get('/mis-cierres',
+        [MantenimientoController::class, 'historialCierres'])
+        ->name('mantenimientos.historial');
 
     Route::patch('mantenimientos/{mantenimiento}/estado',
         [MantenimientoController::class, 'cambiarEstado'])
-        ->name('mantenimientos.estado');
+        ->name('mantenimientos.cambiarEstado');
 
-    Route::get('/mis-asignaciones', [MantenimientoController::class, 'misAsignaciones'])
-        ->name('mantenimientos.mis-asignaciones');
+    // Resource DESPUÉS de las rutas específicas
+    Route::resource('mantenimientos', MantenimientoController::class);
 
-    // Equipos
+    // ── Equipos ── rutas específicas ANTES del resource ─────────────────────
+    Route::get('/equipos/tecnico',
+        [EquipoController::class, 'indexTecnico'])
+        ->name('equipos.tecnico.index');
+
+    Route::get('/equipos/{id}/historial',
+        [EquipoController::class, 'historial'])
+        ->name('equipos.historial');
+
     Route::resource('equipos', EquipoController::class);
 
-    // Usuarios (solo Coordinador)
+    // ── Usuarios (solo Coordinador) ──────────────────────────────────────────
     Route::middleware('rol:Coordinador')->group(function () {
 
         Route::resource('usuarios', UserController::class)
             ->only(['index', 'create', 'store']);
 
-        // Editar y actualizar
-        Route::get('usuarios/{usuario}/edit',   [UserController::class, 'edit'])->name('usuarios.edit');
-        Route::put('usuarios/{usuario}',        [UserController::class, 'update'])->name('usuarios.update');
+        Route::get('usuarios/{usuario}/edit',  [UserController::class, 'edit'])->name('usuarios.edit');
+        Route::put('usuarios/{usuario}',       [UserController::class, 'update'])->name('usuarios.update');
 
-        // Cambiar estado (Activo ↔ Inactivo)
         Route::patch('usuarios/{usuario}/estado',
             [UserController::class, 'cambiarEstado'])
             ->name('usuarios.estado');
 
-        // Historiales de auditoría
         Route::get('usuarios/{usuario}/historial',
-        [UserController::class, 'historial'])
-        ->name('usuarios.historial');
+            [UserController::class, 'historial'])
+            ->name('usuarios.historial');
     });
 
-    // Reportes
+    // ── Perfil propio (cualquier rol) ────────────────────────────────────────
+    Route::get('/mi-perfil', [UserController::class, 'perfilForm'])->name('perfil.form');
+    Route::put('/mi-perfil', [UserController::class, 'perfilUpdate'])->name('perfil.update');
+
+    // ── Reportes ─────────────────────────────────────────────────────────────
     Route::get('/reportes', fn() => view('reportes.index'))->name('reportes.index');
 });
