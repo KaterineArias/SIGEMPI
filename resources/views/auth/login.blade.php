@@ -30,6 +30,13 @@
                 <p>Ingresa tus credenciales para continuar</p>
             </div>
 
+            {{-- Mensaje de éxito tras resetear contraseña --}}
+            @if(session('success'))
+                <div class="alert" style="background:#dcfce7;border:1px solid #86efac;color:#166534;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;">
+                    {{ session('success') }}
+                </div>
+            @endif
+
             {{-- Error general --}}
             @if ($errors->has('login'))
                 <div class="alert alert-error">
@@ -87,6 +94,13 @@
                 <button type="submit" class="btn btn-primary btn-login">
                     Iniciar sesión
                 </button>
+
+                {{-- Link de recuperación de contraseña --}}
+                <a href="{{ route('password.solicitar') }}"
+                   style="display:block;text-align:center;margin-top:var(--space-4);font-size:var(--text-sm);color:var(--color-text-muted);text-decoration:none;">
+                    ¿Olvidaste tu contraseña?
+                </a>
+
             </form>
 
         </div>

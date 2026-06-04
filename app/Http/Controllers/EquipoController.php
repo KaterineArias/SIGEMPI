@@ -7,45 +7,50 @@ use Illuminate\Http\Request;
 
 class EquipoController extends Controller
 {
-    public function index(Request $request)
+    public function index()
     {
-        $query = Equipo::query();
-
-        if ($request->filled('tipo')) {
-            $query->where('Tipo', $request->tipo);
-        }
-
-        if ($request->filled('estado')) {
-            $query->where('Estado', $request->estado);
-        }
-
-        $equipos = $query->orderBy('Codigo_Inventario')->get();
+        // TODO: implementar listado con filtros/paginación
+        $equipos = collect(); // reemplazar con Equipo::all() o query builder
 
         return view('equipos.index', compact('equipos'));
     }
 
     public function create()
     {
-        // Por implementar
+        // TODO: cargar catálogos necesarios (tipos, ubicaciones, estados, etc.)
+        return view('equipos.create');
     }
 
     public function store(Request $request)
     {
-        // Por implementar
+        // TODO: validar y guardar equipo
+        return redirect()->route('equipos.index')
+                         ->with('success', 'Equipo creado. [pendiente implementar]');
     }
 
-    public function edit(Equipo $equipo)
+    public function show(string $id)
     {
-        // Por implementar
+        // TODO: mostrar detalle del equipo
+        return view('equipos.show');
     }
 
-    public function update(Request $request, Equipo $equipo)
+    public function edit(string $id)
     {
-        // Por implementar
+        // TODO: cargar equipo y catálogos para edición
+        return view('equipos.edit');
     }
 
-    public function destroy(Equipo $equipo)
+    public function update(Request $request, string $id)
     {
-        // Por implementar
+        // TODO: validar y actualizar equipo
+        return redirect()->route('equipos.index')
+                         ->with('success', 'Equipo actualizado. [pendiente implementar]');
+    }
+
+    public function destroy(string $id)
+    {
+        // TODO: eliminar o desactivar equipo
+        return redirect()->route('equipos.index')
+                         ->with('success', 'Equipo eliminado. [pendiente implementar]');
     }
 }
