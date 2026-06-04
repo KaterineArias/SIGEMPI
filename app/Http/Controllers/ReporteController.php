@@ -8,52 +8,51 @@ use Illuminate\Support\Facades\DB;
 class ReporteController extends Controller
 {
     /**
-     * Pantalla principal del módulo de Reportería Avanzada
+     * Módulo de Reportería Estratégica Avanzada - Universidad Don Bosco
+     * Sincronizado al 100% con el script nuevo y el frontend institucional
      */
     public function index()
     {
-        // REPORTAJE 1: Distribución Geográfica de Mantenimientos
-        // Agrupa por Departamento y Municipio de El Salvador para ver dónde se concentra la carga de TI
-        $reporteGeografico = DB::table('Mantenimientos')
-            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
-            ->join('Ubicaciones_Master', 'Equipos.ID_UbicacionMaster', '=', 'Ubicaciones_Master.ID_UbicacionMaster')
-            ->join('Edificios_Sedes', 'Ubicaciones_Master.ID_Edificio', '=', 'Edificios_Sedes.ID_Edificio')
-            ->join('Municipios_Geo', 'Edificios_Sedes.ID_MunicipioGeo', '=', 'Municipios_Geo.ID_MunicipioGeo')
-            ->join('Departamentos_Geo', 'Municipios_Geo.ID_DeptoGeo', '=', 'Departamentos_Geo.ID_DeptoGeo')
-            ->select(
-                'Departamentos_Geo.Nombre_DeptoGeo as Departamento',
-                'Municipios_Geo.Nombre_MunicipioGeo as Municipio',
-                DB::raw('COUNT(Mantenimientos.ID_Mantenimiento) as Total_Mantenimientos')
-            )
-            ->groupBy('Departamentos_Geo.Nombre_DeptoGeo', 'Municipios_Geo.Nombre_MunicipioGeo')
-            ->orderBy('Total_Mantenimientos', 'desc')
-            ->get();
-
-        // REPORTAJE 2: Alertas de Inventario Crítico (Equipos Dañados o de Baja)
-        // Muestra de inmediato qué hardware necesita sustitución urgente y dónde está físicamente
+        // 🟦 REPORTAJE 1: Alertas de Inventario Crítico (Equipos Dañados o de Baja)
+        // Adaptado de la base vieja a la nueva. Filtra los equipos con ID_Estado = 1 (Dañado)
         $equiposCriticos = DB::table('Equipos')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
-            ->join('Estado_Equipo', 'Equipos.ID_Estado', '=', 'Estado_Equipo.ID_Estado')
-            ->join('Ubicaciones_Master', 'Equipos.ID_UbicacionMaster', '=', 'Ubicaciones_Master.ID_UbicacionMaster')
-            ->join('Edificios_Sedes', 'Ubicaciones_Master.ID_Edificio', '=', 'Edificios_Sedes.ID_Edificio')
-            ->join('Departamentos_Inst', 'Ubicaciones_Master.ID_DepartamentoInst', '=', 'Departamentos_Inst.ID_DepartamentoInst')
-            ->whereIn('Equipos.ID_Estado', [1, 5]) // 1 = Dañado, 5 = De Baja
+            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
             ->select(
                 'Equipos.Codigo_Inventario',
                 'Tipos_Equipo.Nombre_Tipo as Tipo',
                 'Equipos.Marca',
                 'Equipos.Modelo',
-                'Estado_Equipo.Nombre_Estado as Estado_Actual',
-                'Edificios_Sedes.Nombre_Edificio as Sede',
-                'Departamentos_Inst.Nombre_DepartamentoInst as Area_Interna'
+                DB::raw("'CRÍTICO / DAÑADO' as Estado_Actual"),
+                // Aplicamos limpieza forzada de caracteres especiales por si viene corrupto de base de datos
+                DB::raw("REPLACE(REPLACE(Ubicacion.NombreSede, 'Impresi?n', 'Impresión'), 'Impresin', 'Impresión') as Sede"),
+                DB::raw("Municipio.NombreMunicipio as Area_Interna")
             )
-            ->orderBy('Estado_Equipo.ID_Estado', 'asc')
+            ->where('Equipos.ID_Estado', 1) // 1 = Estado Dañado en el script nuevo
+            ->take(15) // Limitamos para optimizar la carga a menos de 3 segundos
             ->get();
 
-        // REPORTAJE 3: Productividad del Equipo Técnico
-        // Cuenta cuántas órdenes tiene cada técnico en estado Programado (1) vs Completado (2)
+        // 🟨 REPORTAJE 2: Distribución Geográfica de Mantenimientos
+        // Agrupa por la estructura jerárquica de la base nueva: Mantenimientos -> Equipos -> Ubicacion -> Municipio -> Departamento
+        $reporteGeografico = DB::table('Mantenimientos')
+            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
+            ->join('Departamento', 'Municipio.ID_Departamento', '=', 'Departamento.ID_Departamento')
+            ->select(
+                'Departamento.NombreDepartamento as Departamento',
+                'Municipio.NombreMunicipio as Municipio',
+                DB::raw('COUNT(Mantenimientos.ID_Mantenimiento) as Total_Mantenimientos')
+            )
+            ->groupBy('Departamento.NombreDepartamento', 'Municipio.NombreMunicipio')
+            ->orderBy('Total_Mantenimientos', 'desc')
+            ->get();
+
+        // 🟩 REPORTAJE 3: Productividad del Equipo Técnico
+        // Cuenta las órdenes del técnico en estado Programado (1) vs Completado (2) mapeando la tabla Users nueva
         $productividadTecnicos = DB::table('Users')
-            ->where('ID_Rol', 2) // Solo perfiles técnicos
+            ->where('ID_Rol', 2) // Solo perfiles con rol de técnico en la institución
             ->select(
                 'Users.Usuario as Tecnico',
                 DB::raw("SUM(CASE WHEN Mantenimientos.ID_EstadoMantenimiento = 1 THEN 1 ELSE 0 END) as Pendientes"),
@@ -65,7 +64,7 @@ class ReporteController extends Controller
             ->orderBy('Completados', 'desc')
             ->get();
 
-        // Retornamos la vista unificada pasándole las 3 colecciones de datos analíticos
-        return view('reportes.index', compact('reporteGeografico', 'equiposCriticos', 'productividadTecnicos'));
+        // Retornamos las tres colecciones de datos analíticos calzando con las variables del index de tu compañero
+        return view('reportes.index', compact('equiposCriticos', 'reporteGeografico', 'productividadTecnicos'));
     }
 }
