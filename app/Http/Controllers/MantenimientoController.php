@@ -2,274 +2,490 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Mantenimiento;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\Equipo;
-use App\Models\User;
+use Carbon\Carbon;
+use Exception;
 
 class MantenimientoController extends Controller
 {
+    /**
+     * VISTA DEL COORDINADOR GENERAL (Institucional original intacto)
+     */
     public function index(Request $request)
     {
-        $tecnicosQuery = User::join('Roles_User', 'Users.ID_Rol', '=', 'Roles_User.ID_Rol')
-                             ->where('Roles_User.Rol', 'Tecnico')
-                             ->select('Users.ID_User', 'Users.Usuario');
-
-        $tecnicos = $tecnicosQuery->get();
+        $tecnicoId = $request->query('tecnico_id');
 
         $query = DB::table('Mantenimientos')
             ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
             ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
             ->join('Users', 'Mantenimientos.ID_Tecnico', '=', 'Users.ID_User')
-            ->join('Catalogo_EstadoMantenimiento',
-                   'Mantenimientos.ID_EstadoMantenimiento', '=',
-                   'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento');
+
+        if (!empty($tecnicoId)) {
+            $query->where('Mantenimientos.ID_Tecnico', $tecnicoId);
+        }
+
+        $proximos = $query->orderBy('Mantenimientos.Fecha_Programada', 'desc')
             ->select(
                 'Mantenimientos.*',
                 'Equipos.Codigo_Inventario',
-                'Tipos_Equipo.Nombre_Tipo as Tipo',
-                'Ubicacion.NombreSede as Ubicacion',
+                'Equipos.Marca',
+                'Equipos.Modelo',
+                'Equipos.ID_Estado',
+                'Tipos_Equipo.Nombre_Tipo',
+                'Ubicacion.NombreSede as Nombre_Edificio',
+                'Municipio.NombreMunicipio as Nombre_DepartamentoInst',
                 'Users.Usuario as Tecnico',
-                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento as Estado_Mantenimiento'
-            );
-
-        if (session('rol') === 'Tecnico') {
-            $query->where('Mantenimientos.ID_Tecnico', session('id_user'));
-        } elseif ($request->filled('tecnico_id')) {
-            $query->where('Mantenimientos.ID_Tecnico', $request->tecnico_id);
-        }
-
-        $mantenimientos = $query->orderBy('Mantenimientos.Fecha_Programada')->get();
-
-        return view('mantenimientos.index', compact('mantenimientos', 'tecnicos'));
-    }
-
-    public function create()
-    {
-        $equipos = DB::table('Equipos')
-            ->join('Estado_Equipo', 'Equipos.ID_Estado', '=', 'Estado_Equipo.ID_Estado')
-            ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
-            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
-            ->where('Estado_Equipo.Estado', '!=', 'De Baja')             
-            ->select(
-                'Equipos.ID_Equipo',
-                'Equipos.Codigo_Inventario',
-                'Tipos_Equipo.Nombre_Tipo as Tipo',
-                'Ubicacion.NombreSede as Ubicacion'
+                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento'
             )
-            ->get();
+            ->paginate(15);
 
-        $tecnicos = DB::table('Users')
-            ->join('Roles_User', 'Users.ID_Rol', '=', 'Roles_User.ID_Rol')
-            ->where('Roles_User.Rol', 'Tecnico')
-            ->select('Users.ID_User', 'Users.Usuario')
-            ->get();
+        $tecnicos = DB::table('Users')->where('ID_Rol', 2)->get();
+        
+        $stats = [
+            'total_equipos'    => DB::table('Equipos')->count(),
+            'equipos_activos'  => DB::table('Equipos')->where('ID_Estado', 2)->count(),
+            'equipos_danados'  => DB::table('Equipos')->where('ID_Estado', 1)->count(),
+            'total_tecnicos'   => DB::table('Users')->where('ID_Rol', 2)->count(),
+            'mant_programados' => DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->count(),
+            'mant_completados' => DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 2)->count(),
+            'mant_este_mes'    => DB::table('Mantenimientos')->whereMonth('Fecha_Programada', 6)->count(),
+            'vencidos'         => DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('Fecha_Programada', '<', '2026-06-04')->count(),
+            'criticos'         => DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('Fecha_Programada', '2026-06-04')->count(),
+            'a_tiempo'         => DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('Fecha_Programada', '>', '2026-06-04')->count(),
+        ];
 
-        return view('mantenimientos.create', compact('equipos', 'tecnicos'));
+        return view('dashboard.coordinador', compact('proximos', 'tecnicos', 'stats'));
     }
 
-    public function store(Request $request)
+    /**
+     * 💾 HISTORIAL PRIVADO DEL TÉCNICO LOGUEADO
+     */
+    public function historialTecnico(Request $request)
     {
-        if (session('rol') === 'Tecnico') {
-            $request->merge(['ID_Tecnico' => session('id_user')]);
-        }
+        $usuarioLogueado = session('usuario') ?? 'tec_oswaldo';
+        $search = $request->query('search', '');
+        $tipoHardware = $request->query('tipo');
+        $exportar = $request->query('exportar');
 
-        $request->validate([
-            'ID_Equipo'        => 'required|exists:Equipos,ID_Equipo',
-            'ID_Tecnico'       => 'required|exists:Users,ID_User',
-            'Fecha_Programada' => 'required|date|after_or_equal:today',
-        ], [
-            'ID_Equipo.required'        => 'Selecciona un equipo.',
-            'ID_Tecnico.required'       => 'Selecciona un técnico.',
-            'Fecha_Programada.required' => 'La fecha es obligatoria.',
-            'Fecha_Programada.after_or_equal' => 'La fecha no puede ser anterior a hoy.',
-        ]);
+        $userRow = DB::table('Users')->whereRaw('LOWER(TRIM(Usuario)) = ?', [strtolower(trim($usuarioLogueado))])->first();
+        $idUser = $userRow ? $userRow->ID_User : null;
 
-        // ID del estado "Programado" desde el catálogo
-        $idEstado = DB::table('Catalogo_EstadoMantenimiento')
-                      ->where('Nombre_EstadoMantenimiento', 'Programado')
-                      ->value('ID_EstadoMantenimiento');
-
-        DB::table('Mantenimientos')->insert([
-            'ID_Equipo'              => $request->ID_Equipo,
-            'ID_Tecnico'             => $request->ID_Tecnico,
-            'Fecha_Programada'       => $request->Fecha_Programada,
-            'ID_EstadoMantenimiento' => $idEstado,              
-            'Fecha_Ingreso'          => now(),
-        ]);
-
-        $ruta = session('rol') === 'Tecnico'
-            ? 'dashboard.tecnico'
-            : 'mantenimientos.index';
-
-        return redirect()->route($ruta)
-                         ->with('success', 'Mantenimiento programado correctamente.');
-    }
-
-    public function misAsignaciones()
-    {
-        $asignaciones = DB::table('Mantenimientos')
+        $totalRegistrosBaseQuery = DB::table('Mantenimientos')
             ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
             ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
-            ->join('Catalogo_EstadoMantenimiento',
-                'Mantenimientos.ID_EstadoMantenimiento', '=',
-                'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
-            ->where('Mantenimientos.ID_Tecnico', session('id_user'))
-            ->whereIn('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
-                    ['Programado', 'Reprogramado'])   // ← solo pendientes
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
+            ->join('Users', 'Mantenimientos.ID_Tecnico', '=', 'Users.ID_User')
+            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento');
+            
+        if (!empty($idUser)) {
+            $totalRegistrosBaseQuery->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+        $totalRegistrosBaseQuery->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+
+        if (!empty($tipoHardware) && $tipoHardware !== 'Todos') {
+            $totalRegistrosBaseQuery->where('Tipos_Equipo.Nombre_Tipo', '=', $tipoHardware);
+        }
+        if (!empty($search)) {
+            $totalRegistrosBaseQuery->where('Equipos.Codigo_Inventario', 'LIKE', '%' . $search . '%');
+        }
+
+        $todosLosRegistrosCerrados = $totalRegistrosBaseQuery->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
             ->select(
                 'Mantenimientos.*',
                 'Equipos.Codigo_Inventario',
-                'Tipos_Equipo.Nombre_Tipo as Tipo',
-                'Ubicacion.NombreSede as Ubicacion',
-                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento as Estado_Mantenimiento',
-                'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento'
+                'Equipos.Marca',
+                'Equipos.Modelo',
+                'Equipos.ID_Estado as ID_EstadoEquipo',
+                'Tipos_Equipo.Nombre_Tipo',
+                'Ubicacion.NombreSede as Nombre_Edificio',
+                'Municipio.NombreMunicipio as Nombre_DepartamentoInst',
+                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
+                'Mantenimiento_Detalle.Accion_Realizada',
+                'Mantenimiento_Detalle.Observaciones_Tecnicas',
+                'Users.Usuario as TecnicoNombre'
             )
-            ->orderByRaw("CASE Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento
-                WHEN 'Programado'   THEN 1
-                WHEN 'Reprogramado' THEN 2
-                ELSE 3 END")
-            ->orderBy('Mantenimientos.Fecha_Programada')
             ->get();
 
-        return view('mantenimientos.mis-asignaciones', compact('asignaciones'));
+        $contadorTotal = $todosLosRegistrosCerrados->count();
+        $contadorATiempo = 0;
+        $contadorEquiposOperativos = 0;
+
+        $todosLosRegistrosCerrados->transform(function($reg) use (&$contadorATiempo, &$contadorEquiposOperativos) {
+            $edificioLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_Edificio);
+            $deptoLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_DepartamentoInst);
+            $reg->UbicacionFisicaSede = $edificioLimpio . ' — ' . $deptoLimpio;
+
+            $meta = strtotime($reg->Fecha_Reprogramacion ?? $reg->Fecha_Programada);
+            $cierre = isset($reg->Fecha_Cierre) ? strtotime($reg->Fecha_Cierre) : null;
+            
+            $reg->es_a_tiempo = ($cierre && ($cierre <= ($meta + 86399)));
+            
+            if ($reg->es_a_tiempo) { $contadorATiempo++; }
+            if ($reg->ID_EstadoEquipo == 2) { $contadorEquiposOperativos++; }
+
+            $reg->Sla_Texto_Inyectado = $reg->es_a_tiempo ? 'SI (Dentro del plazo estipulado)' : 'NO (Fuera del margen del SLA)';
+            $reg->EstadoHardwareTexto = ($reg->ID_EstadoEquipo == 2) ? 'Operativo (Activo / En Servicio)' : 'Dañado (Fuera de Servicio)';
+            
+            return $reg;
+        });
+
+        $porcentajeSlaReal = $contadorTotal > 0 ? round(($contadorATiempo / $contadorTotal) * 100) : 100;
+
+        if (!empty($exportar)) {
+            $filename = "Reporte_Bitacora_" . date('Ymd');
+
+            if ($exportar === 'csv') {
+                header('Content-Type: text/csv; charset=utf-8');
+                header('Content-Disposition: attachment; filename="' . $filename . '.csv"');
+                $fp = fopen('php://output', 'w');
+                fputcsv($fp, ['ID Orden', 'Inventario', 'Hardware / Tipo', 'Ubicacion / Sede', 'Fecha Cierre', 'Accion Ejecutada']);
+                foreach ($todosLosRegistrosCerrados as $row) {
+                    fputcsv($fp, [$row->ID_Mantenimiento, $row->Codigo_Inventario, $row->Nombre_Tipo, $row->UbicacionFisicaSede, $row->Fecha_Cierre, $row->Accion_Realizada]);
+                }
+                fclose($fp);
+                exit;
+            }
+
+            header("Content-Disposition: attachment; filename=\"$filename." . ($exportar === 'excel' ? 'xls' : 'doc') . "\"");
+            header("Content-Type: application/vnd.ms-" . ($exportar === 'excel' ? 'excel' : 'word'));
+
+            echo "<html><head><meta charset='utf-8'>
+            <style>
+                @page { margin: 1.2cm 1.2cm 1.2cm 1.2cm; }
+                body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; font-size: 11px; line-height: 1.2; }
+                .h-title { font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 2px; text-transform: uppercase; }
+                .h-sub { font-size: 10px; color: #64748b; margin-bottom: 6px; }
+                .meta-table { font-size: 12px; margin-bottom: 12px; }
+                .data-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; }
+                .data-table th { background: #0f172a; color: #ffffff; padding: 7px; font-weight: bold; text-align: center; border: 1px solid #cbd5e1; }
+                .data-table td { padding: 6px; border: 1px solid #cbd5e1; color: #334155; vertical-align: middle; }
+                .f-container { width: 100%; margin-top: 45px; font-size: 12px; }
+                .f-block { width: 45%; text-align: center; vertical-align: top; }
+            </style>
+            </head><body>";
+
+            echo "<div class='h-title'>SIGEMPI — HOJA DE BITÁCORA CONSOLIDADA</div>";
+            echo "<div class='h-sub'>Sistema de Gestión de Parque Informático</div>";
+            echo "<hr style='border:0; border-top: 2px solid #0f172a; margin-top:2px; margin-bottom: 8px;'>";
+
+            echo "<div class='meta-table'>
+                    <b>Técnico Operador Responsable:</b> {$usuarioLogueado}<br>
+                    <b>Fecha de Generación del Reporte:</b> " . date('d/m/Y h:i A') . "<br>
+                    <b>Segmentación de Hardware:</b> " . (!empty($tipoHardware) ? $tipoHardware : 'Todos los Equipos') . "
+                  </div>";
+
+            echo "<table class='data-table'>
+                    <thead>
+                        <tr>
+                            <th style='width:10%;'>ID Orden</th>
+                            <th style='width:18%;'>Inventario</th>
+                            <th style='width:15%;'>Hardware / Tipo</th>
+                            <th>Ubicación / Sede</th>
+                            <th style='width:18%;'>Fecha Cierre</th>
+                            <th style='width:22%;'>Acción Ejecutada</th>
+                        </tr>
+                    </thead>
+                    <tbody>";
+
+            foreach ($todosLosRegistrosCerrados as $row) {
+                echo "<tr>
+                        <td align='center'>MANT-{$row->ID_Mantenimiento}</td>
+                        <td><b>{$row->Codigo_Inventario}</b></td>
+                        <td>{$row->Nombre_Tipo}</td>
+                        <td>{$row->UbicacionFisicaSede}</td>
+                        <td align='center'>{$row->Fecha_Cierre}</td>
+                        <td>" . ($row->Accion_Realizada ?? 'Diagnóstico de equipo') . "</td>
+                      </tr>";
+            }
+            echo "</tbody></table>";
+
+            echo "<table class='f-container' border='0' cellspacing='0' cellpadding='0'>
+                    <tr>
+                        <td class='f-block' align='center'>
+                            <div style='border-top: 1px solid #1e293b; width: 80%; padding-top: 4px; margin-top:30px;'>
+                                <b>Firma de Técnico Operador</b><br>
+                                <span style='font-size:10px; color:#64748b;'>{$usuarioLogueado}</span>
+                            </div>
+                        </td>
+                        <td style='width: 10%;'>&nbsp;</td>
+                        <td class='f-block' align='center'>
+                            <div style='border-top: 1px solid #1e293b; width: 80%; padding-top: 4px; margin-top:30px;'>
+                                <b>Firma de Recibido Conforme</b><br>
+                                <span style='font-size:10px; color:#64748b;'>Encargado de Laboratorio / Sede</span>
+                            </div>
+                        </td>
+                    </tr>
+                  </table>";
+
+            echo "</body></html>";
+            exit;
+        }
+
+        // PAGING PARA CONSULTA WEB
+        $queryGridOpts = DB::table('Mantenimientos')
+            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+            ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
+            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
+            ->join('Users', 'Mantenimientos.ID_Tecnico', '=', 'Users.ID_User')
+            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento');
+            
+        if (!empty($idUser)) {
+            $queryGridOpts->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+        $queryGridOpts->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+
+        if (!empty($tipoHardware) && $tipoHardware !== 'Todos') {
+            $queryGridOpts->where('Tipos_Equipo.Nombre_Tipo', '=', $tipoHardware);
+        }
+        if (!empty($search)) {
+            $queryGridOpts->where('Equipos.Codigo_Inventario', 'LIKE', '%' . $search . '%');
+        }
+
+        $misMantenimientosPasados = $queryGridOpts->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
+            ->select(
+                'Mantenimientos.*',
+                'Equipos.Codigo_Inventario',
+                'Equipos.Marca',
+                'Equipos.Modelo',
+                'Equipos.ID_Estado as ID_EstadoEquipo',
+                'Tipos_Equipo.Nombre_Tipo',
+                'Ubicacion.NombreSede as Nombre_Edificio',
+                'Municipio.NombreMunicipio as Nombre_DepartamentoInst',
+                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
+                'Mantenimiento_Detalle.Accion_Realizada',
+                'Mantenimiento_Detalle.Observaciones_Tecnicas',
+                'Users.Usuario as TecnicoNombre'
+            )
+            ->paginate(15);
+
+        $misMantenimientosPasados->getCollection()->transform(function($reg) {
+            $edificioLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_Edificio);
+            $deptoLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_DepartamentoInst);
+            $reg->UbicacionFisicaSede = $edificioLimpio . ' — ' . $deptoLimpio;
+
+            $meta = strtotime($reg->Fecha_Reprogramacion ?? $reg->Fecha_Programada);
+            $cierre = isset($reg->Fecha_Cierre) ? strtotime($reg->Fecha_Cierre) : null;
+            
+            $reg->es_a_tiempo = ($cierre && ($cierre <= ($meta + 86399)));
+            $reg->Sla_Texto_Inyectado = $reg->es_a_tiempo ? 'SI (Dentro del plazo estipulado)' : 'NO (Fuera del margen del SLA)';
+            $reg->EstadoHardwareTexto = ($reg->ID_EstadoEquipo == 2) ? 'Operativo (Activo / En Servicio)' : 'Dañado (Fuera de Servicio)';
+            
+            return $reg;
+        });
+
+        $kpis = [
+            'total'      => $contadorTotal,
+            'operativos' => $contadorEquiposOperativos,
+            'sla_rate'   => $porcentajeSlaReal
+        ];
+
+        return view('dashboard.historial_tecnico', compact('misMantenimientosPasados', 'search', 'kpis'));
     }
 
-    public function cambiarEstado(Request $request, Mantenimiento $mantenimiento)
+    /**
+     * 📋 👑 BANDEJA OPERATIVA DE ASIGNACIONES ACTIVAS
+     */
+    public function dashboardTecnico(Request $request)
     {
-        $nuevoEstado = $request->estado;
-        $rol         = session('rol');
+        $usuarioLogueado = session('usuario') ?? 'tec_oswaldo';
+        $filtro = $request->query('filtro', 'Asignados');
+        $search = $request->query('search', '');
 
-        $estadosCoordinador = ['Reprogramado', 'Cancelado'];
-        $estadosTecnico     = ['Completado'];
+        $userRow = DB::table('Users')->whereRaw('LOWER(TRIM(Usuario)) = ?', [strtolower(trim($usuarioLogueado))])->first();
+        $idUser = $userRow ? $userRow->ID_User : null;
 
-        if ($rol === 'Coordinador' && !in_array($nuevoEstado, $estadosCoordinador)) {
-            return back()->withErrors(['estado' => 'Acción no permitida.']);
+        $hoyStr = '2026-06-04';
+        Carbon::setLocale('es');
+        $fechaEncabezadoTexto = "Bandeja de órdenes de trabajo asignadas — " . Carbon::parse($hoyStr)->isoFormat('dddd, DD [de] MMMM [de] YYYY');
+
+        // 📊 1. CÁLCULO DINÁMICO DE KPIS
+        $baseKpi = DB::table('Mantenimientos');
+        if (!empty($idUser)) {
+            $baseKpi->whereRaw('CAST(ID_Tecnico AS INT) = ?', [intval($idUser)]);
         }
 
-        if ($rol === 'Tecnico') {
-            if (!in_array($nuevoEstado, $estadosTecnico)) {
-                return back()->withErrors(['estado' => 'Acción no permitida.']);
+        $totalPendientes = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->count();
+        $totalMes        = (clone $baseKpi)->whereMonth('Fecha_Programada', 6)->count();
+        $totalCerrados   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 2)->count();
+        
+        $totalVencidos   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '<', $hoyStr)->count();
+        $totalCriticos   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '=', $hoyStr)->count();
+        $totalSeguros    = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '>', $hoyStr)->count();
+
+        $panelStats = [
+            'pendientes' => $totalPendientes,
+            'este_mes'   => $totalMes,
+            'cerrados'   => $totalCerrados,
+            'vencidos'   => $totalVencidos,
+            'criticos'   => $totalCriticos,
+            'seguros'    => $totalSeguros
+        ];
+
+        // 🚀 ENDPOINT ASÍNCRONO AJAX PARA RECOGER LA FICHA TÉCNICA DINÁMICA
+        if ($request->ajax() && $request->has('get_detalle_id')) {
+            $idMaint = $request->query('get_detalle_id');
+            $fichaData = DB::table('Mantenimientos')
+                ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+                ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
+                ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+                ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+                ->leftJoin('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento')
+                ->where('Mantenimientos.ID_Mantenimiento', $idMaint)
+                ->select(
+                    'Mantenimientos.ID_Mantenimiento',
+                    'Mantenimientos.Fecha_Programada',
+                    'Mantenimientos.Fecha_Cierre',
+                    'Mantenimientos.Fecha_Reprogramacion',
+                    'Equipos.Codigo_Inventario',
+                    'Equipos.Marca',
+                    'Equipos.Modelo',
+                    'Equipos.ID_Estado as ID_EstadoEquipo',
+                    'Tipos_Equipo.Nombre_Tipo',
+                    'Ubicacion.NombreSede as Nombre_Edificio',
+                    'Mantenimiento_Detalle.Accion_Realizada',
+                    'Mantenimiento_Detalle.Observaciones_Tecnicas'
+                )->first();
+
+            if ($fichaData) {
+                $edificioSaneado = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $fichaData->Nombre_Edificio);
+                $metaTime = strtotime($fichaData->Fecha_Reprogramacion ?? $fichaData->Fecha_Programada);
+                $cierreTime = $fichaData->Fecha_Cierre ? strtotime($fichaData->Fecha_Cierre) : null;
+                $esAtiempo = ($cierreTime && ($cierreTime <= ($metaTime + 86399)));
+
+                return response()->json([
+                    'success'            => true,
+                    'id'                 => $fichaData->ID_Mantenimiento,
+                    'inventario'         => $fichaData->Codigo_Inventario,
+                    'hardware'           => $fichaData->Nombre_Tipo . " (" . $fichaData->Marca . " - " . $fichaData->Modelo . ")",
+                    'ubicacion'          => $edificioSaneado,
+                    'tecnico'            => $usuarioLogueado,
+                    'fecha_programada'   => Carbon::parse($fichaData->Fecha_Programada)->format('d/m/Y'),
+                    'fecha_cierre'       => $fichaData->Fecha_Cierre ? Carbon::parse($fichaData->Fecha_Cierre)->format('d/m/Y g:i A') : 'No registrada',
+                    'estado_hardware'    => ($fichaData->ID_EstadoEquipo == 2) ? '🟢 Operativo (Activo / En Servicio)' : '🔴 Dañado (Fuera de Servicio / Requiere Reparación Mayor)',
+                    'cumplimiento_sla'   => $esAtiempo ? '🟢 SÍ (Dentro del plazo estipulado)' : '🔴 NO (Fuera del margen del SLA)',
+                    'accion_realizada'   => $fichaData->Accion_Realizada ?? 'Diagnóstico de equipo básico.',
+                    'observaciones'      => $fichaData->Observaciones_Tecnicas ?? 'Sin observaciones adicionales registradas.'
+                ]);
             }
-            if ($mantenimiento->ID_Tecnico !== session('id_user')) {
-                abort(403);
+            return response()->json(['success' => false, 'message' => 'Orden no localizada.'], 404);
+        }
+
+        // 🔍 2. CONSTRUCCIÓN DE LA GRILLA DE ACUERDO AL FILTRO SELECCIONADO
+        $queryGrid = DB::table('Mantenimientos')
+            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+            ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
+            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+            ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
+            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento');
+
+        if (!empty($idUser)) {
+            $queryGrid->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+
+        if ($filtro === 'Completados') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+        } elseif ($filtro === 'TodoMes') {
+            $queryGrid->whereMonth('Mantenimientos.Fecha_Programada', 6);
+        } elseif ($filtro === 'Vencidos') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '<', $hoyStr);
+        } elseif ($filtro === 'Criticos') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '=', $hoyStr);
+        } elseif ($filtro === 'Seguros') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '>', $hoyStr);
+        } else {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1);
+        }
+
+        if (!empty($search)) {
+            $queryGrid->where('Equipos.Codigo_Inventario', 'LIKE', '%' . $search . '%');
+        }
+
+        $registrosRaw = $queryGrid->orderBy('Mantenimientos.Fecha_Programada', 'asc')
+            ->select(
+                'Mantenimientos.*',
+                'Equipos.Codigo_Inventario',
+                'Equipos.Marca',
+                'Equipos.Modelo',
+                'Equipos.ID_Estado as ID_EstadoEquipo',
+                'Tipos_Equipo.Nombre_Tipo',
+                'Ubicacion.NombreSede as Nombre_Edificio',
+                'Municipio.NombreMunicipio as Nombre_DepartamentoInst',
+                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento'
+            )
+            ->get();
+
+        $datosGridMapeados = $registrosRaw->map(function($reg) {
+            $edificioLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_Edificio);
+            $deptoLimpio = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $reg->Nombre_DepartamentoInst);
+            $reg->UbicacionFisicaSede = $edificioLimpio . ' — ' . $deptoLimpio;
+
+            $meta = strtotime($reg->Fecha_Reprogramacion ?? $reg->Fecha_Programada);
+            $cierre = isset($reg->Fecha_Cierre) ? strtotime($reg->Fecha_Cierre) : null;
+            $reg->es_a_tempo = ($cierre && ($cierre <= ($meta + 86399)));
+            
+            return $reg;
+        });
+
+        return view('dashboard.tecnico', [
+            'misAsignacionesPendientes'   => $datosGridMapeados,
+            'panelStats'                  => $panelStats,
+            'filtro'                      => $filtro,
+            'search'                      => $search,
+            'fechaTextoEncabezado'        => $fechaEncabezadoTexto
+        ]);
+    }
+
+    public function edit($id)
+    {
+        $mantenimiento = DB::table('Mantenimientos')->where('ID_Mantenimiento', $id)->first();
+        if (!$mantenimiento) {
+            return redirect()->route('dashboard.tecnico')->with('error', 'La orden de trabajo no existe.');
+        }
+        return redirect()->route('intervenciones.create', ['id_mantenimiento' => $id]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $comentarios = $request->input('Observaciones_Tecnicas') ?? $request->input('Observaciones') ?? 'Sin observaciones registradas.';
+        $accion = $request->input('Accion_Realizada') ?? 'Mantenimiento Correctivo aplicado en Sede';
+        $estadoEquipo = $request->input('ID_EstadoEquipo') ?? 2; 
+
+        DB::beginTransaction();
+        try {
+            $mantenimiento = DB::table('Mantenimientos')->where('ID_Mantenimiento', $id)->first();
+            if (!$mantenimiento) {
+                return redirect()->route('dashboard.tecnico')->with('error', 'La orden no existe.');
             }
-        }
 
-        $estadoActual = DB::table('Catalogo_EstadoMantenimiento')
-            ->where('ID_EstadoMantenimiento', $mantenimiento->ID_EstadoMantenimiento)
-            ->value('Nombre_EstadoMantenimiento');
+            $fechaCierreActual = now()->format('Y-m-d H:i:s');
 
-        if (in_array($estadoActual, ['Completado', 'Cancelado'])) {
-            return back()->withErrors(['estado' => 'Este mantenimiento ya no puede modificarse.']);
-        }
+            DB::statement("UPDATE Mantenimientos SET ID_EstadoMantenimiento = 2, Fecha_Cierre = ? WHERE ID_Mantenimiento = ?", [$fechaCierreActual, $id]);
+            DB::statement("UPDATE Equipos SET ID_Estado = ? WHERE ID_Equipo = ?", [$estadoEquipo, $mantenimiento->ID_Equipo]);
 
-        $idNuevoEstado = DB::table('Catalogo_EstadoMantenimiento')
-            ->where('Nombre_EstadoMantenimiento', $nuevoEstado)
-            ->value('ID_EstadoMantenimiento');
-
-        $data = ['ID_EstadoMantenimiento' => $idNuevoEstado];
-
-        if ($nuevoEstado === 'Reprogramado') {
-            $request->validate([
-                'Fecha_Programada' => 'required|date|after_or_equal:today',
-            ]);
-            $data['Fecha_Programada']     = $request->Fecha_Programada;
-            $data['Fecha_Reprogramacion'] = now();
-        }
-
-        if ($nuevoEstado === 'Completado') {
-            $request->validate([
-                'Accion_Realizada'       => 'required|string|max:500',
-                'Observaciones_Tecnicas' => 'nullable|string|max:1000',
-            ], [
-                'Accion_Realizada.required' => 'Debes describir la acción realizada.',
-                'Accion_Realizada.max'      => 'Máximo 500 caracteres.',
-            ]);
-
-            $data['Fecha_Cierre'] = now();
-
-            // Guardar detalle del mantenimiento
+            $idTecnico = session('id_user') ?? $mantenimiento->ID_Tecnico ?? 2;
+            DB::table('Mantenimiento_Detalle')->where('ID_Mantenimiento', $id)->delete();
             DB::table('Mantenimiento_Detalle')->insert([
-                'ID_Mantenimiento'       => $mantenimiento->ID_Mantenimiento,
-                'ID_TecnicoIntervino'    => session('id_user'),
+                'ID_Mantenimiento'       => $id,
+                'ID_TecnicoIntervino'    => $idTecnico,
                 'Fecha_Registro'         => now(),
-                'Accion_Realizada'       => $request->Accion_Realizada,
-                'Observaciones_Tecnicas' => $request->Observaciones_Tecnicas,
+                'Accion_Realizada'       => $accion,
+                'Observaciones_Tecnicas' => $comentarios
             ]);
+
+            DB::commit();
+            return redirect()->route('dashboard.tecnico', ['filtro' => 'Asignados'])->with('success', '¡Mantenimiento cerrado con éxito!');
+
+        } catch (Exception $e) {
+            DB::rollBack();
+            return redirect()->route('dashboard.tecnico')->with('error', 'Error al procesar: ' . $e->getMessage());
         }
-
-        DB::table('Mantenimientos')
-            ->where('ID_Mantenimiento', $mantenimiento->ID_Mantenimiento)
-            ->update($data);
-
-        $ruta = $rol === 'Tecnico'
-            ? 'mantenimientos.mis-asignaciones'
-            : 'mantenimientos.index';
-
-        return redirect()->route($ruta)
-                        ->with('success', 'Mantenimiento actualizado correctamente.');
     }
-
-    public function historialCierres(Request $request)
-    {
-        $query = DB::table('Mantenimientos')
-            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
-            ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
-            ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
-            ->join('Catalogo_EstadoMantenimiento',
-                'Mantenimientos.ID_EstadoMantenimiento', '=',
-                'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
-            ->where('Mantenimientos.ID_Tecnico', session('id_user'))
-            ->whereIn('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
-                    ['Completado', 'Cancelado']);
-
-        if ($request->filled('estado')) {
-            $query->where('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento',
-                        $request->estado);
-        }
-
-        // Filtro por rango de fechas
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('Mantenimientos.Fecha_Cierre', '>=', $request->fecha_desde);
-        }
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('Mantenimientos.Fecha_Cierre', '<=', $request->fecha_hasta);
-        }
-
-        $cierres = $query
-            ->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
-            ->select(
-                'Mantenimientos.*',
-                'Equipos.Codigo_Inventario',
-                'Tipos_Equipo.Nombre_Tipo as Tipo',
-                'Ubicacion.NombreSede as Ubicacion',
-                'Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento as Estado_Mantenimiento'
-            )
-            ->get();
-
-        // Contadores para tarjetas resumen
-        $totalCierres    = $cierres->count();
-        $totalCompletado = $cierres->where('Estado_Mantenimiento', 'Completado')->count();
-        $totalCancelado  = $cierres->where('Estado_Mantenimiento', 'Cancelado')->count();
-
-        // Detalles por mantenimiento para el modal
-        $detalles = DB::table('Mantenimiento_Detalle')
-            ->whereIn('ID_Mantenimiento', $cierres->pluck('ID_Mantenimiento'))
-            ->orderBy('Fecha_Registro', 'desc')
-            ->get()
-            ->groupBy('ID_Mantenimiento');
-
-        return view('mantenimientos.historial-cierres', compact(
-            'cierres', 'totalCierres', 'totalCompletado', 'totalCancelado', 'detalles'
-        ));
-    }
-
-    public function show(Mantenimiento $mantenimiento) {}
-    public function edit(Mantenimiento $mantenimiento) {}
-    public function update(Request $request, Mantenimiento $mantenimiento) {}
-    public function destroy(Mantenimiento $mantenimiento) {}
 }

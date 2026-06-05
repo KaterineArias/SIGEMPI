@@ -2,24 +2,27 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
     /**
      * Seed the application's database.
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        $this->call([
+            RolSeeder::class,
+            UserSeeder::class,
+            EstadoSeeder::class,
+            TipoSeeder::class,
+            SedeSeeder::class,
+            MunicipioSeeder::class,
+            EquipoSeeder::class,
+            EstadoMantenimientoSeeder::class,
+            // 👑 INTEGRACIÓN DE NIVEL INTERNACIONAL PARA REPORTERÍA
+            // Este seeder inyecta los 100 mantenimientos distribuidos de marzo a julio
+            MantenimientoAnaliticoSeeder::class,
         ]);
     }
 }
