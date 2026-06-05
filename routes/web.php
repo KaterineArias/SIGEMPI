@@ -35,7 +35,8 @@ Route::middleware(['autenticado'])->group(function () {
         ->middleware('rol:Coordinador')
         ->name('dashboard.coordinador');
 
-    Route::get('/dashboard/tecnico', [DashboardController::class, 'tecnico'])
+    // Sincronizado para que consuma la bandeja unificada y tolerante de MantenimientoController
+    Route::get('/dashboard/tecnico', [MantenimientoController::class, 'dashboardTecnico'])
         ->middleware('rol:Tecnico')
         ->name('dashboard.tecnico');
 

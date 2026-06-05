@@ -4,19 +4,88 @@
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     <style>
-        .grid-filter-tabs { display: flex; gap: 10px; margin: 1.5rem 0; flex-wrap: wrap; }
-        .grid-tab-btn {
-            padding: 10px 20px; border-radius: 8px; border: 1px solid #cbd5e1;
-            background: #fff; color: #475569; font-size: 13px; font-weight: 600;
-            text-decoration: none; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+        .kpi-grid { 
+            display: flex !important; 
+            gap: 12px; 
+            margin-bottom: 1.5rem; 
+            width: 100%;
         }
-        .grid-tab-btn.active { background: #da6714; color: #fff; border-color: #da6714; box-shadow: 0 4px 6px -1px rgba(218, 103, 20, 0.2); }
-        .grid-tab-btn .t-badge { background: rgba(0,0,0,0.08); padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-        .grid-tab-btn.active .t-badge { background: rgba(255,255,255,0.25); color: #fff; }
+        .kpi-link-wrapper { 
+            text-transform: none; 
+            text-decoration: none; 
+            color: inherit; 
+            flex: 1 1 0px !important; 
+            min-width: 160px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease; 
+            cursor: pointer; 
+        }
+        .kpi-link-wrapper:hover { transform: translateY(-3px); }
         
+        .kpi-card {
+            height: 100% !important;
+            box-sizing: border-box !important;
+        }
+        .kpi-card.kpi-active-filter { 
+            border: 2px solid #da6714 !important; 
+            background: #fffbf7; 
+            box-shadow: 0 10px 15px -3px rgba(218, 103, 20, 0.12) !important; 
+        }
+
+        /* 👑 FUENTES E INTERFAZ INSTITUCIONAL COMPACTA DE PRIMER MUNDO */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        th {
+            font-size: 11px !important;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: #64748b;
+            padding: 10px 12px !important;
+            font-weight: 700;
+        }
+        td {
+            padding: 10px 12px !important;
+            font-size: 12px !important;
+            color: #334155;
+            vertical-align: middle;
+            white-space: nowrap; /* Evita rupturas artificiales de línea */
+        }
+        .inv-code-text {
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            color: #0f172a;
+            letter-spacing: -0.2px;
+        }
+        .hardware-subtext {
+            display: block; 
+            font-size: 11px !important; 
+            color: #64748b; 
+            margin-top: 1px;
+            font-weight: 400;
+        }
+        .badge {
+            font-size: 10px !important;
+            padding: 3px 8px !important;
+            font-weight: 600 !important;
+            border-radius: 4px !important;
+        }
+
         .btn-action-atender {
-            padding: 6px 14px; background: #da6714; color: #fff; border-radius: 6px;
-            font-size: 12px; font-weight: 600; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer; transition: background 0.15s;
+            padding: 5px 12px; 
+            background: #da6714; 
+            color: #fff; 
+            border-radius: 5px;
+            font-size: 11px; 
+            font-weight: 600; 
+            text-decoration: none; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 4px; 
+            border: none; 
+            cursor: pointer; 
+            transition: background 0.15s;
         }
         .btn-action-atender:hover { background: #b04f0d; }
         
@@ -93,10 +162,9 @@
         <main class="page-body">
             <div class="page-heading">
                 <h1>Hola, {{ session('usuario', 'Técnico') }}</h1>
-                <p>Bandeja integral de control de mantenimiento e intervenciones — Entorno Operativo</p>
+                <p>{{ $fechaTextoEncabezado ?? 'Bandeja integral de control de mantenimiento e intervenciones — Entorno Operativo' }}</p>
             </div>
 
-            {{-- 🛡️ EXTRACCIÓN MODULAR CONTRA VARIABLES DESALINEADAS --}}
             @php 
                 $allVars = get_defined_vars();
                 $statsGrid = $allVars['panelStats'] ?? $allVars['panelstats'] ?? [
@@ -107,35 +175,51 @@
                 $searchQuery = $allVars['search'] ?? '';
             @endphp
 
-            {{-- SEIS TARJETAS KPI --}}
-            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 1.5rem;">
-                <div class="kpi-card">
-                    <div class="kpi-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
-                    <div class="kpi-value">{{ $statsGrid['pendientes'] }}</div>
-                    <div class="kpi-label">Mis asignaciones pendientes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon teal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-                    <div class="kpi-value">{{ $statsGrid['este_mes'] }}</div>
-                    <div class="kpi-label">Asignadas este mes</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 4 12 14.01 9 11.01"/><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
-                    <div class="kpi-value">{{ $statsGrid['cerrados'] }}</div>
-                    <div class="kpi-label">Mis mantenimientos cerrados</div>
-                </div>
-                <div class="kpi-card" style="border-bottom: 4px solid #ef4444;">
-                    <div class="kpi-value" style="color: #ef4444;">{{ $statsGrid['vencidos'] }}</div>
-                    <div class="kpi-label">Alertas: Vencidas (Rojo)</div>
-                </div>
-                <div class="kpi-card" style="border-bottom: 4px solid #f97316;">
-                    <div class="kpi-value" style="color: #f97316;">{{ $statsGrid['criticos'] }}</div>
-                    <div class="kpi-label">Alertas: Críticas Hoy (Naranja)</div>
-                </div>
-                <div class="kpi-card" style="border-bottom: 4px solid #22c55e;">
-                    <div class="kpi-value" style="color: #22c55e;">{{ $statsGrid['seguros'] }}</div>
-                    <div class="kpi-label">Alertas: Margen Seguro (Verde)</div>
-                </div>
+            <div class="kpi-grid">
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Asignados', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'Asignados' ? 'kpi-active-filter' : '' }}">
+                        <div class="kpi-icon orange"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+                        <div class="kpi-value">{{ $statsGrid['pendientes'] }}</div>
+                        <div class="kpi-label">Mis asignaciones pendientes</div>
+                    </div>
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'TodoMes', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'TodoMes' ? 'kpi-active-filter' : '' }}">
+                        <div class="kpi-icon teal"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+                        <div class="kpi-value">{{ $statsGrid['este_mes'] }}</div>
+                        <div class="kpi-label">Asignadas este mes</div>
+                    </div>
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Completados', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'Completados' ? 'kpi-active-filter' : '' }}">
+                        <div class="kpi-icon green"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 4 12 14.01 9 11.01"/><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/></svg></div>
+                        <div class="kpi-value">{{ $statsGrid['cerrados'] }}</div>
+                        <div class="kpi-label">Mis mantenimientos cerrados</div>
+                    </div>
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Vencidos', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'Vencidos' ? 'kpi-active-filter' : '' }}" style="border-bottom: 4px solid #ef4444;">
+                        <div class="kpi-value" style="color: #ef4444;">{{ $statsGrid['vencidos'] }}</div>
+                        <div class="kpi-label">Alertas: Vencidas (Rojo)</div>
+                    </div>
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Criticos', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'Criticos' ? 'kpi-active-filter' : '' }}" style="border-bottom: 4px solid #f97316;">
+                        <div class="kpi-value" style="color: #f97316;">{{ $statsGrid['criticos'] }}</div>
+                        <div class="kpi-label">Alertas: Críticas Hoy (Naranja)</div>
+                    </div>
+                </a>
+
+                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Seguros', 'search' => $searchQuery]) }}" class="kpi-link-wrapper">
+                    <div class="kpi-card {{ $activeFilter === 'Seguros' ? 'kpi-active-filter' : '' }}" style="border-bottom: 4px solid #22c55e;">
+                        <div class="kpi-value" style="color: #22c55e;">{{ $statsGrid['seguros'] }}</div>
+                        <div class="kpi-label">Alertas: Margen Seguro (Verde)</div>
+                    </div>
+                </a>
             </div>
 
             {{-- BUSCADOR REACTIVO --}}
@@ -150,21 +234,8 @@
                 </form>
             </div>
 
-            {{-- BOTONES DE PESTAÑAS --}}
-            <div class="grid-filter-tabs">
-                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Asignados', 'search' => $searchQuery]) }}" class="grid-tab-btn {{ $activeFilter === 'Asignados' ? 'active' : '' }}">
-                    Pendientes de Cierre <span class="t-badge">{{ $statsGrid['pendientes'] }}</span>
-                </a>
-                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Completados', 'search' => $searchQuery]) }}" class="grid-tab-btn {{ $activeFilter === 'Completados' ? 'active' : '' }}">
-                    Completados <span class="t-badge">{{ $statsGrid['cerrados'] }}</span>
-                </a>
-                <a href="{{ route('dashboard.tecnico', ['filtro' => 'Vencidos', 'search' => $searchQuery]) }}" class="grid-tab-btn {{ $activeFilter === 'Vencidos' ? 'active' : '' }}">
-                    Vencidos <span class="t-badge">{{ $statsGrid['vencidos'] }}</span>
-                </a>
-            </div>
-
-            <div style="font-size: 13px; font-weight: bold; color: #475569; margin-bottom: 0.75rem; text-transform: uppercase;">
-                Vista de Registros: <span style="color:#da6714;">{{ $activeFilter }}</span>
+            <div style="font-size: 13px; font-weight: bold; color: #475569; margin-bottom: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
+                Listado Filtrado: <span style="color:#da6714;">{{ $activeFilter === 'Asignados' ? 'Pendientes de Cierre' : ($activeFilter === 'TodoMes' ? 'Asignadas este mes' : $activeFilter) }}</span>
             </div>
 
             <div class="table-wrapper">
@@ -181,45 +252,54 @@
                                 <th>HARDWARE ASOCIADO</th>
                                 <th>UBICACIÓN SEDE DESTINO</th>
                                 <th>FECHA PROGRAMADA</th>
-                                @if($activeFilter === 'Completados')
+                                @if($activeFilter === 'Completados' || (isset($loopData[0]) && $loopData[0]->ID_EstadoMantenimiento == 2))
                                     <th>FECHA CIERRE</th>
-                                    <th style="text-align: center;">¿A TIEMPO?</th>
-                                @else
-                                    <th style="text-align: center;">ESTADO</th>
-                                    <th style="text-align: center;">INTERVENCIÓN</th>
                                 @endif
+                                <th style="text-align: center;">ESTADO</th>
+                                <th style="text-align: center;">{{ $activeFilter === 'Completados' || (isset($loopData[0]) && $loopData[0]->ID_EstadoMantenimiento == 2) ? '¿A TIEMPO?' : 'INTERVENCION' }}</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($loopData as $index => $row)
-                                <tr>
+                                <tr @if($row->ID_EstadoMantenimiento == 2) style="cursor:pointer;" onclick="consultarFichaBitacora('{{ $row->ID_Mantenimiento }}')" @endif>
                                     <td align="center" style="color:#94a3b8; font-weight:bold;">{{ $index + 1 }}</td>
-                                    <td><strong>{{ $row->Codigo_Inventario }}</strong></td>
+                                    <td><span class="inv-code-text">{{ $row->Codigo_Inventario }}</span></td>
                                     <td>
-                                        <span class="badge" style="background:#e0f2fe; color:#0369a1; font-weight:bold;">{{ $row->Nombre_Tipo }}</span>
-                                        <span style="display:block; font-size:11px; color:#64748b; margin-top:2px;">{{ $row->Marca }} — {{ $row->Modelo }}</span>
+                                        <span class="badge" style="background:#e0f2fe; color:#0369a1;">{{ $row->Nombre_Tipo }}</span>
+                                        <span class="hardware-subtext">{{ $row->Marca }} — {{ $row->Modelo }}</span>
                                     </td>
-                                    <td style="color:#475569; font-size:13px;">{{ $row->UbicacionFisicaSede }}</td>
+                                    <td style="color:#475569;">{{ $row->UbicacionFisicaSede }}</td>
                                     <td style="font-weight:600;">{{ \Carbon\Carbon::parse($row->Fecha_Programada)->format('d/m/Y') }}</td>
                                     
-                                    @if($activeFilter === 'Completados')
-                                        <td style="color:#16a34a; font-weight:600;">{{ \Carbon\Carbon::parse($row->Fecha_Cierre)->format('d/m/Y g:i A') }}</td>
-                                        <td style="text-align: center;">
+                                    @if($row->ID_EstadoMantenimiento == 2)
+                                        <td style="color:#16a34a; font-weight:600;">{{ $row->Fecha_Cierre ? \Carbon\Carbon::parse($row->Fecha_Cierre)->format('d/m/Y g:i A') : 'No Registrada' }}</td>
+                                    @endif
+
+                                    <td style="text-align: center;">
+                                        @if($row->ID_EstadoMantenimiento == 2)
+                                            <span class="badge" style="background:#d1fae5; color:#065f46;">COMPLETADO</span>
+                                        @else
+                                            <span class="badge" style="background: #fef3c7; color: #92400e; text-transform: uppercase;">{{ $row->Nombre_EstadoMantenimiento }}</span>
+                                        @endif
+                                    </td>
+
+                                    <td style="text-align: center;">
+                                        @if($row->ID_EstadoMantenimiento == 2)
                                             @php $colorSLA = isset($row->es_a_tempo) && $row->es_a_tempo ? 'background:#d1fae5; color:#065f46;' : 'background:#fee2e2; color:#991b1b;'; @endphp
-                                            <span class="badge" style="{{ $colorSLA }} font-weight:bold;">{{ isset($row->es_a_tempo) && $row->es_a_tempo ? 'SÍ' : 'NO' }}</span>
-                                        </td>
-                                    @else
-                                        <td style="text-align: center;">
-                                            <span class="badge" style="background: #fef3c7; color: #92400e; font-weight: bold; text-transform: uppercase;">{{ $row->Nombre_EstadoMantenimiento }}</span>
-                                        </td>
-                                        <td style="text-align: center;">
-                                            {{-- 🟢 SINTAXIS JAVASCRIPT COMPLETAMENTE SANA Y LIMPIA SIN SLASHES DE ESCAPE INVERTIDOS --}}
+                                            <span class="badge" style="{{ $colorSLA }}">{{ isset($row->es_a_tempo) && $row->es_a_tempo ? 'SÍ' : 'NO' }}</span>
+                                        @else
                                             <button type="button" class="btn-action-atender" 
-                                                    onclick="abrirModalIntervencion('{{ $row->ID_Mantenimiento }}', '{{ $row->Codigo_Inventario }}', '{{ $row->Nombre_Tipo }}', '{{ $row->UbicacionFisicaSede }}', '{{ \Carbon\Carbon::parse($row->Fecha_Programada)->format('d/m/Y') }}')">
+                                                    onclick="event.stopPropagation(); abrirModalIntervencion(
+                                                        '{{ addslashes($row->ID_Mantenimiento) }}', 
+                                                        '{{ addslashes($row->Codigo_Inventario) }}', 
+                                                        '{{ addslashes($row->Nombre_Tipo) }}', 
+                                                        '{{ addslashes($row->UbicacionFisicaSede) }}', 
+                                                        '{{ \Carbon\Carbon::parse($row->Fecha_Programada)->format('d/m/Y') }}'
+                                                    )">
                                                 Atender Orden
                                             </button>
-                                        </td>
-                                    @endif
+                                        @endif
+                                    </td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -230,7 +310,7 @@
     </div>
 </div>
 
-{{-- MODAL EN CALIENTE INTERACTIVO DE CIERRE TÉCNICO COMPLETO --}}
+{{-- MODAL INTERACTIVO INSTITUCIONAL GENERAL --}}
 <div id="intervencionModalHot" class="modal-action-overlay">
     <div class="modal-card" style="width: 100%; max-width: 650px; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.3);">
         <form method="POST" id="formIntervencionDinamico" action="">
@@ -238,7 +318,7 @@
             @method('PUT')
             
             <div class="m-act-header">
-                <h3>🛠️ Execution of Corrective Maintenance</h3>
+                <h3 id="modal_titulo_dinamico">Mi Bitácora de Cierre — Mantenimiento</h3>
                 <button type="button" class="m-act-close" onclick="cerrarModalIntervencion()">✕</button>
             </div>
             
@@ -272,28 +352,38 @@
 
                 <hr style="border:0; border-top:1px solid #e2e8f0; margin:15px 0;">
 
-                <div class="form-ctrl-field" style="margin-bottom: 12px;">
-                    <label>Estatus Operativo Final del Hardware <span style="color:#ef4444;">*</span></label>
-                    <select name="ID_EstadoEquipo" required style="font-weight: 600; color:#0f172a;">
-                        <option value="2">🟢 Operativo (Activo / En Servicio / Reparado)</option>
-                        <option value="1">🔴 Dañado (Fuera de Servicio / Requiere Cambio Estructural)</option>
-                    </select>
+                <div id="seccion_campos_editables">
+                    <div class="form-ctrl-field" style="margin-bottom: 12px;">
+                        <label>Estatus Operativo Final del Hardware <span style="color:#ef4444;">*</span></label>
+                        <select name="ID_EstadoEquipo" id="modal_input_estado" required style="font-weight: 600; color:#0f172a;">
+                            <option value="2">🟢 Operativo (Activo / En Servicio / Reparado)</option>
+                            <option value="1">🔴 Dañado (Fuera de Servicio / Requiere Cambio Estructural)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-ctrl-field" style="margin-bottom: 12px;">
+                        <label>Acción Técnica Realizada <span style="color:#ef4444;">*</span></label>
+                        <input type="text" name="Accion_Realizada" id="modal_input_accion" required placeholder="Ej: Limpieza de inyectores y calibración de rodillos.">
+                    </div>
+
+                    <div class="form-ctrl-field">
+                        <label>Diagnóstico & Observaciones de Justificación <span style="color:#ef4444;">*</span></label>
+                        <textarea name="Observaciones_Tecnicas" id="modal_input_observaciones" required placeholder="Describe detalladamente los hallazgos técnicos encontrados..."></textarea>
+                    </div>
                 </div>
 
-                <div class="form-ctrl-field" style="margin-bottom: 12px;">
-                    <label>Acción Técnica Realizada <span style="color:#ef4444;">*</span></label>
-                    <input type="text" name="Accion_Realizada" required placeholder="Ej: Limpieza de inyectores y calibración de rodillos.">
-                </div>
-
-                <div class="form-ctrl-field">
-                    <label>Diagnóstico & Observaciones de Justificación <span style="color:#ef4444;">*</span></label>
-                    <textarea name="Observaciones_Tecnicas" required placeholder="Describe detalladamente los hallazgos técnicos encontrados..."></textarea>
+                <div id="seccion_vista_ficha_historica" style="display: none; background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 13px;">
+                    <div style="margin-bottom: 8px;"><b>Fecha Real de Cierre:</b> <span id="ficha_txt_cierre"></span></div>
+                    <div style="margin-bottom: 8px;"><b>Estado del Hardware Post-Intervención:</b> <span id="ficha_txt_estado_hw"></span></div>
+                    <div style="margin-bottom: 8px;"><b>Cumplimiento de SLA Estipulado:</b> <span id="ficha_txt_sla"></span></div>
+                    <div style="margin-bottom: 8px;"><b>Acción Técnica Ejecutada:</b> <div id="ficha_txt_accion" style="background:#fff; padding:6px; border:1px solid #cbd5e1; border-radius:4px; margin-top:4px; font-weight:600;"></div></div>
+                    <div><b>Observaciones y Hallazgos Registrados:</b> <div id="ficha_txt_observaciones" style="background:#fff; padding:6px; border:1px solid #cbd5e1; border-radius:4px; margin-top:4px;"></div></div>
                 </div>
             </div>
 
             <div class="m-act-footer">
-                <button type="button" class="btn btn-ghost" onclick="cerrarModalIntervencion()">Cancelar</button>
-                <button type="submit" class="btn btn-primary" style="padding: 8px 20px; background:#da6714; color:#fff; font-size:13px; font-weight:bold; border-radius:6px; border:none; cursor:pointer;">
+                <button type="button" class="btn btn-ghost" onclick="cerrarModalIntervencion()">Cerrar</button>
+                <button type="submit" id="btn_modal_guardar_accion" class="btn btn-primary" style="padding: 8px 20px; background:#da6714; color:#fff; font-size:13px; font-weight:bold; border-radius:6px; border:none; cursor:pointer;">
                     💾 Guardar y Cierre Orden
                 </button>
             </div>
@@ -303,6 +393,11 @@
 
 <script>
     function abrirModalIntervencion(id, inv, hardware, ubicacion, fecha) {
+        document.getElementById('modal_titulo_dinamico').innerText = "Mi Bitácora de Cierre — Mantenimiento #" + id;
+        document.getElementById('seccion_campos_editables').style.display = "block";
+        document.getElementById('seccion_vista_ficha_historica').style.display = "none";
+        document.getElementById('btn_modal_guardar_accion').style.display = "block";
+
         const baseRoute = "{{ url('mantenimientos') }}/" + id;
         document.getElementById('formIntervencionDinamico').setAttribute('action', baseRoute);
         
@@ -313,6 +408,35 @@
         document.getElementById('modal_display_fecha').value = fecha;
         
         document.getElementById('intervencionModalHot').classList.add('active');
+    }
+
+    function consultarFichaBitacora(id) {
+        fetch("{{ route('dashboard.tecnico') }}?get_detalle_id=" + id, {
+            headers: { "X-Requested-With": "XMLHttpRequest" }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                document.getElementById('modal_titulo_dinamico').innerText = "Mi Bitácora de Cierre — Mantenimiento #" + data.id;
+                document.getElementById('modal_display_id').value = "MANT-" + data.id;
+                document.getElementById('modal_display_inv').value = data.inventario;
+                document.getElementById('modal_display_hardware').value = data.hardware;
+                document.getElementById('modal_display_ubicacion').value = data.ubicacion;
+                document.getElementById('modal_display_fecha').value = data.fecha_programada;
+
+                document.getElementById('seccion_campos_editables').style.display = "none";
+                document.getElementById('btn_modal_guardar_accion').style.display = "none";
+                document.getElementById('seccion_vista_ficha_historica').style.display = "block";
+
+                document.getElementById('ficha_txt_cierre').innerText = data.fecha_cierre;
+                document.getElementById('ficha_txt_estado_hw').innerText = data.estado_hardware;
+                document.getElementById('ficha_txt_sla').innerText = data.cumplimiento_sla;
+                document.getElementById('ficha_txt_accion').innerText = data.accion_realizada;
+                document.getElementById('ficha_txt_observaciones').innerText = data.observaciones;
+
+                document.getElementById('intervencionModalHot').classList.add('active');
+            }
+        });
     }
 
     function cerrarModalIntervencion() {

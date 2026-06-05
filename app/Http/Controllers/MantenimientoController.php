@@ -4,12 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Exception;
 
 class MantenimientoController extends Controller
 {
     /**
-     * VISTA DEL COORDINADOR GENERAL
+     * VISTA DEL COORDINADOR GENERAL (Institucional original intacto)
      */
     public function index(Request $request)
     {
@@ -61,7 +62,7 @@ class MantenimientoController extends Controller
     }
 
     /**
-     * 💾 HISTORIAL PRIVADO DEL TÉCNICO LOGUEADO (Exportación Word ajustada para forzar UNA SOLA PÁGINA)
+     * 💾 HISTORIAL PRIVADO DEL TÉCNICO LOGUEADO
      */
     public function historialTecnico(Request $request)
     {
@@ -70,10 +71,9 @@ class MantenimientoController extends Controller
         $tipoHardware = $request->query('tipo');
         $exportar = $request->query('exportar');
 
-        $userRow = DB::table('Users')->where('Usuario', $usuarioLogueado)->first();
-        $idUser = $userRow ? $userRow->ID_User : 2;
+        $userRow = DB::table('Users')->whereRaw('LOWER(TRIM(Usuario)) = ?', [strtolower(trim($usuarioLogueado))])->first();
+        $idUser = $userRow ? $userRow->ID_User : null;
 
-        // OBTENCIÓN BASE PARA CONTADORES Y EXPORTACIONES COMPLETAS
         $totalRegistrosBaseQuery = DB::table('Mantenimientos')
             ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
@@ -81,9 +81,12 @@ class MantenimientoController extends Controller
             ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
             ->join('Users', 'Mantenimientos.ID_Tecnico', '=', 'Users.ID_User')
             ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
-            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento')
-            ->where('Mantenimientos.ID_Tecnico', $idUser)
-            ->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento');
+            
+        if (!empty($idUser)) {
+            $totalRegistrosBaseQuery->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+        $totalRegistrosBaseQuery->where('Mantenimientos.ID_EstadoMantenimiento', 2);
 
         if (!empty($tipoHardware) && $tipoHardware !== 'Todos') {
             $totalRegistrosBaseQuery->where('Tipos_Equipo.Nombre_Tipo', '=', $tipoHardware);
@@ -123,12 +126,8 @@ class MantenimientoController extends Controller
             
             $reg->es_a_tiempo = ($cierre && ($cierre <= ($meta + 86399)));
             
-            if ($reg->es_a_tiempo) {
-                $contadorATiempo++;
-            }
-            if ($reg->ID_EstadoEquipo == 2) {
-                $contadorEquiposOperativos++;
-            }
+            if ($reg->es_a_tiempo) { $contadorATiempo++; }
+            if ($reg->ID_EstadoEquipo == 2) { $contadorEquiposOperativos++; }
 
             $reg->Sla_Texto_Inyectado = $reg->es_a_tiempo ? 'SI (Dentro del plazo estipulado)' : 'NO (Fuera del margen del SLA)';
             $reg->EstadoHardwareTexto = ($reg->ID_EstadoEquipo == 2) ? 'Operativo (Activo / En Servicio)' : 'Dañado (Fuera de Servicio)';
@@ -138,7 +137,6 @@ class MantenimientoController extends Controller
 
         $porcentajeSlaReal = $contadorTotal > 0 ? round(($contadorATiempo / $contadorTotal) * 100) : 100;
 
-        // 👑 MAQUETACIÓN ULTRA COMPACTA EVITANDO EL DESBORDE DE image_e0e542.png
         if (!empty($exportar)) {
             $filename = "Reporte_Bitacora_" . date('Ymd');
 
@@ -207,7 +205,6 @@ class MantenimientoController extends Controller
             }
             echo "</tbody></table>";
 
-            // Reducción drástica del espacio superior (`margin-top`) para evitar que salte a la página 2
             echo "<table class='f-container' border='0' cellspacing='0' cellpadding='0'>
                     <tr>
                         <td class='f-block' align='center'>
@@ -230,26 +227,29 @@ class MantenimientoController extends Controller
             exit;
         }
 
-        // CONSULTA PAGINADA PARA PANTALLA WEB
-        $queryGrid = DB::table('Mantenimientos')
+        // PAGING PARA CONSULTA WEB
+        $queryGridOpts = DB::table('Mantenimientos')
             ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
             ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
             ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
             ->join('Users', 'Mantenimientos.ID_Tecnico', '=', 'Users.ID_User')
             ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
-            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento')
-            ->where('Mantenimientos.ID_Tecnico', $idUser)
-            ->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+            ->join('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento');
+            
+        if (!empty($idUser)) {
+            $queryGridOpts->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+        $queryGridOpts->where('Mantenimientos.ID_EstadoMantenimiento', 2);
 
         if (!empty($tipoHardware) && $tipoHardware !== 'Todos') {
-            $queryGrid->where('Tipos_Equipo.Nombre_Tipo', '=', $tipoHardware);
+            $queryGridOpts->where('Tipos_Equipo.Nombre_Tipo', '=', $tipoHardware);
         }
         if (!empty($search)) {
-            $queryGrid->where('Equipos.Codigo_Inventario', 'LIKE', '%' . $search . '%');
+            $queryGridOpts->where('Equipos.Codigo_Inventario', 'LIKE', '%' . $search . '%');
         }
 
-        $misMantenimientosPasados = $queryGrid->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
+        $misMantenimientosPasados = $queryGridOpts->orderBy('Mantenimientos.Fecha_Cierre', 'desc')
             ->select(
                 'Mantenimientos.*',
                 'Equipos.Codigo_Inventario',
@@ -291,7 +291,7 @@ class MantenimientoController extends Controller
     }
 
     /**
-     * 📋 VISTA DE ASIGNACIONES ACTIVAS PENDIENTES
+     * 📋 👑 BANDEJA OPERATIVA DE ASIGNACIONES ACTIVAS
      */
     public function dashboardTecnico(Request $request)
     {
@@ -299,38 +299,107 @@ class MantenimientoController extends Controller
         $filtro = $request->query('filtro', 'Asignados');
         $search = $request->query('search', '');
 
-        $userRow = DB::table('Users')->where('Usuario', $usuarioLogueado)->first();
-        $idUser = $userRow ? $userRow->ID_User : 2;
+        $userRow = DB::table('Users')->whereRaw('LOWER(TRIM(Usuario)) = ?', [strtolower(trim($usuarioLogueado))])->first();
+        $idUser = $userRow ? $userRow->ID_User : null;
 
-        $cantAsignadosPendientes = DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('ID_Tecnico', $idUser)->count();
-        $cantAsignadosMes = DB::table('Mantenimientos')->whereMonth('Fecha_Programada', 6)->where('ID_Tecnico', $idUser)->count();
-        $cantCerrados = DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 2)->where('ID_Tecnico', $idUser)->count();
+        $hoyStr = '2026-06-04';
+        Carbon::setLocale('es');
+        $fechaEncabezadoTexto = "Bandeja de órdenes de trabajo asignadas — " . Carbon::parse($hoyStr)->isoFormat('dddd, DD [de] MMMM [de] YYYY');
+
+        // 📊 1. CÁLCULO DINÁMICO DE KPIS
+        $baseKpi = DB::table('Mantenimientos');
+        if (!empty($idUser)) {
+            $baseKpi->whereRaw('CAST(ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
+
+        $totalPendientes = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->count();
+        $totalMes        = (clone $baseKpi)->whereMonth('Fecha_Programada', 6)->count();
+        $totalCerrados   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 2)->count();
         
-        $cantVencidos = DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('ID_Tecnico', $idUser)->where('Fecha_Programada', '<', '2026-06-04')->count();
-        $cantCriticos = DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('ID_Tecnico', $idUser)->where('Fecha_Programada', '=', '2026-06-04')->count();
-        $cantSeguros = DB::table('Mantenimientos')->where('ID_EstadoMantenimiento', 1)->where('ID_Tecnico', $idUser)->where('Fecha_Programada', '>', '2026-06-04')->count();
+        $totalVencidos   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '<', $hoyStr)->count();
+        $totalCriticos   = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '=', $hoyStr)->count();
+        $totalSeguros    = (clone $baseKpi)->where('ID_EstadoMantenimiento', 1)->whereDate('Fecha_Programada', '>', $hoyStr)->count();
 
         $panelStats = [
-            'pendientes' => $cantAsignadosPendientes,
-            'este_mes'   => $cantAsignadosMes,
-            'cerrados'   => $cantCerrados,
-            'vencidos'   => $cantVencidos,
-            'criticos'   => $cantCriticos,
-            'seguros'    => $cantSeguros
+            'pendientes' => $totalPendientes,
+            'este_mes'   => $totalMes,
+            'cerrados'   => $totalCerrados,
+            'vencidos'   => $totalVencidos,
+            'criticos'   => $totalCriticos,
+            'seguros'    => $totalSeguros
         ];
 
+        // 🚀 ENDPOINT ASÍNCRONO AJAX PARA RECOGER LA FICHA TÉCNICA DINÁMICA
+        if ($request->ajax() && $request->has('get_detalle_id')) {
+            $idMaint = $request->query('get_detalle_id');
+            $fichaData = DB::table('Mantenimientos')
+                ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+                ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
+                ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
+                ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
+                ->leftJoin('Mantenimiento_Detalle', 'Mantenimientos.ID_Mantenimiento', '=', 'Mantenimiento_Detalle.ID_Mantenimiento')
+                ->where('Mantenimientos.ID_Mantenimiento', $idMaint)
+                ->select(
+                    'Mantenimientos.ID_Mantenimiento',
+                    'Mantenimientos.Fecha_Programada',
+                    'Mantenimientos.Fecha_Cierre',
+                    'Mantenimientos.Fecha_Reprogramacion',
+                    'Equipos.Codigo_Inventario',
+                    'Equipos.Marca',
+                    'Equipos.Modelo',
+                    'Equipos.ID_Estado as ID_EstadoEquipo',
+                    'Tipos_Equipo.Nombre_Tipo',
+                    'Ubicacion.NombreSede as Nombre_Edificio',
+                    'Mantenimiento_Detalle.Accion_Realizada',
+                    'Mantenimiento_Detalle.Observaciones_Tecnicas'
+                )->first();
+
+            if ($fichaData) {
+                $edificioSaneado = str_replace(['Impresi?n', 'Impresi&oacute;n', 'Impresin'], 'Impresión', $fichaData->Nombre_Edificio);
+                $metaTime = strtotime($fichaData->Fecha_Reprogramacion ?? $fichaData->Fecha_Programada);
+                $cierreTime = $fichaData->Fecha_Cierre ? strtotime($fichaData->Fecha_Cierre) : null;
+                $esAtiempo = ($cierreTime && ($cierreTime <= ($metaTime + 86399)));
+
+                return response()->json([
+                    'success'            => true,
+                    'id'                 => $fichaData->ID_Mantenimiento,
+                    'inventario'         => $fichaData->Codigo_Inventario,
+                    'hardware'           => $fichaData->Nombre_Tipo . " (" . $fichaData->Marca . " - " . $fichaData->Modelo . ")",
+                    'ubicacion'          => $edificioSaneado,
+                    'tecnico'            => $usuarioLogueado,
+                    'fecha_programada'   => Carbon::parse($fichaData->Fecha_Programada)->format('d/m/Y'),
+                    'fecha_cierre'       => $fichaData->Fecha_Cierre ? Carbon::parse($fichaData->Fecha_Cierre)->format('d/m/Y g:i A') : 'No registrada',
+                    'estado_hardware'    => ($fichaData->ID_EstadoEquipo == 2) ? '🟢 Operativo (Activo / En Servicio)' : '🔴 Dañado (Fuera de Servicio / Requiere Reparación Mayor)',
+                    'cumplimiento_sla'   => $esAtiempo ? '🟢 SÍ (Dentro del plazo estipulado)' : '🔴 NO (Fuera del margen del SLA)',
+                    'accion_realizada'   => $fichaData->Accion_Realizada ?? 'Diagnóstico de equipo básico.',
+                    'observaciones'      => $fichaData->Observaciones_Tecnicas ?? 'Sin observaciones adicionales registradas.'
+                ]);
+            }
+            return response()->json(['success' => false, 'message' => 'Orden no localizada.'], 404);
+        }
+
+        // 🔍 2. CONSTRUCCIÓN DE LA GRILLA DE ACUERDO AL FILTRO SELECCIONADO
         $queryGrid = DB::table('Mantenimientos')
             ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
             ->join('Tipos_Equipo', 'Equipos.ID_Tipo', '=', 'Tipos_Equipo.ID_Tipo')
             ->join('Ubicacion', 'Equipos.ID_Ubicacion', '=', 'Ubicacion.ID_Ubicacion')
             ->join('Municipio', 'Ubicacion.ID_Municipio', '=', 'Municipio.ID_Municipio')
-            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento')
-            ->where('Mantenimientos.ID_Tecnico', $idUser);
+            ->join('Catalogo_EstadoMantenimiento', 'Mantenimientos.ID_EstadoMantenimiento', '=', 'Catalogo_EstadoMantenimiento.ID_EstadoMantenimiento');
+
+        if (!empty($idUser)) {
+            $queryGrid->whereRaw('CAST(Mantenimientos.ID_Tecnico AS INT) = ?', [intval($idUser)]);
+        }
 
         if ($filtro === 'Completados') {
             $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 2);
+        } elseif ($filtro === 'TodoMes') {
+            $queryGrid->whereMonth('Mantenimientos.Fecha_Programada', 6);
         } elseif ($filtro === 'Vencidos') {
-            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->where('Mantenimientos.Fecha_Programada', '<', '2026-06-04');
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '<', $hoyStr);
+        } elseif ($filtro === 'Criticos') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '=', $hoyStr);
+        } elseif ($filtro === 'Seguros') {
+            $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1)->whereDate('Mantenimientos.Fecha_Programada', '>', $hoyStr);
         } else {
             $queryGrid->where('Mantenimientos.ID_EstadoMantenimiento', 1);
         }
@@ -369,7 +438,8 @@ class MantenimientoController extends Controller
             'misAsignacionesPendientes'   => $datosGridMapeados,
             'panelStats'                  => $panelStats,
             'filtro'                      => $filtro,
-            'search'                      => $search
+            'search'                      => $search,
+            'fechaTextoEncabezado'        => $fechaEncabezadoTexto
         ]);
     }
 
