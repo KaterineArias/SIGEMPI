@@ -3,6 +3,31 @@
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <style>
+        .tab-btn {
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 500;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--color-text-muted);
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+            transition: color 0.15s, border-color 0.15s;
+            display: inline-flex;
+            align-items: center;
+        }
+        .tab-btn:hover { color: var(--color-text); }
+        .tab-active {
+            color: var(--color-primary);
+            border-bottom-color: var(--color-primary);
+        }
+        .badge-blue  { background:#dbeafe; color:#1d4ed8; }
+        .badge-green { background:#dcfce7; color:#166534; }
+        .badge-red   { background:#fee2e2; color:#991b1b; }
+        .badge-gray  { background:#f1f5f9; color:#475569; }
+    </style>
 @endpush
 
 @section('body')
@@ -63,7 +88,7 @@
                             <p>Sin cambios de estado registrados.</p>
                         </div>
                     @else
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -95,7 +120,7 @@
                             <p>Sin cambios de rol registrados.</p>
                         </div>
                     @else
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -127,7 +152,7 @@
                             <p>Sin cambios de nombre de usuario registrados.</p>
                         </div>
                     @else
-                        <table>
+                        <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Fecha</th>
@@ -156,29 +181,6 @@
 </div>
 @endsection
 
-@push('styles')
-<style>
-.tab-btn {
-    padding: 8px 16px;
-    font-size: 13px;
-    font-weight: 500;
-    border: none;
-    background: none;
-    cursor: pointer;
-    color: var(--color-text-muted);
-    border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
-    transition: color 0.15s, border-color 0.15s;
-    display: inline-flex;
-    align-items: center;
-}
-.tab-btn:hover { color: var(--color-text); }
-.tab-active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-</style>
-@endpush
 
 @push('scripts')
 <script>
