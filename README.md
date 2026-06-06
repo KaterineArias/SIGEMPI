@@ -8,8 +8,11 @@ Sistema web desarrollado en Laravel para la gestión y seguimiento de mantenimie
 
 
 **Asignatura** : Análisis y Diseño de Sistemas Informáticos (ADS941) 
+
 **Docente** : Ing. Héctor Alexander Valladares Pérez 
+
 **Proyecto**  Sistema de Gestión de Mantenimiento del Parque Informático (SIGEMPI)
+
 
 ---
 
