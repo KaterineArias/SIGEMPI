@@ -1,11 +1,13 @@
 <?php
 
+
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\MantenimientoController;
 use App\Http\Controllers\EquipoController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ReporteController;
 
 // Autenticación
 Route::get('/',       [AuthController::class, 'showLogin'])->name('login');
@@ -59,6 +61,12 @@ Route::middleware(['autenticado'])->group(function () {
     Route::patch('mantenimientos/{mantenimiento}/estado',
         [MantenimientoController::class, 'cambiarEstado'])
         ->name('mantenimientos.cambiarEstado');
+    
+    Route::get('mantenimientos/auditoria', [MantenimientoController::class, 'auditoria'])
+     ->name('mantenimientos.auditoria');
+
+    Route::get('mantenimientos/{mantenimiento}/historial-cambios', [MantenimientoController::class, 'historialCambios'])
+        ->name('mantenimientos.historialCambios');
 
     // Resource DESPUÉS de las rutas específicas
     Route::resource('mantenimientos', MantenimientoController::class);
@@ -98,4 +106,5 @@ Route::middleware(['autenticado'])->group(function () {
 
     // ── Reportes ─────────────────────────────────────────────────────────────
     Route::get('/reportes', fn() => view('reportes.index'))->name('reportes.index');
+    Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
 });

@@ -41,6 +41,10 @@ class MantenimientoController extends Controller
             $query->where('Mantenimientos.ID_Tecnico', $request->tecnico_id);
         }
 
+        if ($request->filled('estado')) {
+            $query->where('Catalogo_EstadoMantenimiento.Nombre_EstadoMantenimiento', $request->estado);
+        }
+
         $mantenimientos = $query->orderBy('Mantenimientos.Fecha_Programada')->get();
 
         return view('mantenimientos.index', compact('mantenimientos', 'tecnicos'));
@@ -56,6 +60,7 @@ class MantenimientoController extends Controller
             ->select(
                 'Equipos.ID_Equipo',
                 'Equipos.Codigo_Inventario',
+                'Equipos.Marca', 
                 'Tipos_Equipo.Nombre_Tipo as Tipo',
                 'Ubicacion.NombreSede as Ubicacion'
             )
@@ -81,23 +86,35 @@ class MantenimientoController extends Controller
             'ID_Tecnico'       => 'required|exists:Users,ID_User',
             'Fecha_Programada' => 'required|date|after_or_equal:today',
         ], [
-            'ID_Equipo.required'        => 'Selecciona un equipo.',
-            'ID_Tecnico.required'       => 'Selecciona un técnico.',
-            'Fecha_Programada.required' => 'La fecha es obligatoria.',
+            'ID_Equipo.required'              => 'Selecciona un equipo.',
+            'ID_Tecnico.required'             => 'Selecciona un técnico.',
+            'Fecha_Programada.required'       => 'La fecha es obligatoria.',
             'Fecha_Programada.after_or_equal' => 'La fecha no puede ser anterior a hoy.',
         ]);
 
-        // ID del estado "Programado" desde el catálogo
         $idEstado = DB::table('Catalogo_EstadoMantenimiento')
-                      ->where('Nombre_EstadoMantenimiento', 'Programado')
-                      ->value('ID_EstadoMantenimiento');
+                    ->where('Nombre_EstadoMantenimiento', 'Programado')
+                    ->value('ID_EstadoMantenimiento');
 
-        DB::table('Mantenimientos')->insert([
+        // insertGetId para obtener el ID recién creado
+        $idMantenimiento = DB::table('Mantenimientos')->insertGetId([
             'ID_Equipo'              => $request->ID_Equipo,
             'ID_Tecnico'             => $request->ID_Tecnico,
             'Fecha_Programada'       => $request->Fecha_Programada,
-            'ID_EstadoMantenimiento' => $idEstado,              
+            'ID_EstadoMantenimiento' => $idEstado,
             'Fecha_Ingreso'          => now(),
+        ]);
+
+        // Registro inicial en historial
+        DB::table('Historial_Cambios_Estado')->insert([
+            'ID_Mantenimiento'   => $idMantenimiento,
+            'ID_EstadoAnterior'  => $idEstado,
+            'ID_EstadoNuevo'     => $idEstado,
+            'ID_TecnicoAnterior' => $request->ID_Tecnico,
+            'ID_TecnicoNuevo'    => $request->ID_Tecnico,
+            'ID_UsuarioModifico' => session('id_user'),
+            'Fecha_Cambio'       => now(),
+            'Motivo_Cambio'      => 'Mantenimiento programado',
         ]);
 
         $ruta = session('rol') === 'Tecnico'
@@ -105,7 +122,7 @@ class MantenimientoController extends Controller
             : 'mantenimientos.index';
 
         return redirect()->route($ruta)
-                         ->with('success', 'Mantenimiento programado correctamente.');
+                        ->with('success', 'Mantenimiento programado correctamente.');
     }
 
     public function misAsignaciones()
@@ -192,7 +209,6 @@ class MantenimientoController extends Controller
 
             $data['Fecha_Cierre'] = now();
 
-            // Guardar detalle del mantenimiento
             DB::table('Mantenimiento_Detalle')->insert([
                 'ID_Mantenimiento'       => $mantenimiento->ID_Mantenimiento,
                 'ID_TecnicoIntervino'    => session('id_user'),
@@ -201,6 +217,18 @@ class MantenimientoController extends Controller
                 'Observaciones_Tecnicas' => $request->Observaciones_Tecnicas,
             ]);
         }
+
+        // Registrar cambio en historial
+        DB::table('Historial_Cambios_Estado')->insert([
+            'ID_Mantenimiento'   => $mantenimiento->ID_Mantenimiento,
+            'ID_EstadoAnterior'  => $mantenimiento->ID_EstadoMantenimiento,
+            'ID_EstadoNuevo'     => $idNuevoEstado,
+            'ID_TecnicoAnterior' => $mantenimiento->ID_Tecnico,
+            'ID_TecnicoNuevo'    => $mantenimiento->ID_Tecnico,
+            'ID_UsuarioModifico' => session('id_user'),
+            'Fecha_Cambio'       => now(),
+            'Motivo_Cambio'      => $request->Motivo_Cambio ?? null,
+        ]);
 
         DB::table('Mantenimientos')
             ->where('ID_Mantenimiento', $mantenimiento->ID_Mantenimiento)
@@ -212,6 +240,76 @@ class MantenimientoController extends Controller
 
         return redirect()->route($ruta)
                         ->with('success', 'Mantenimiento actualizado correctamente.');
+    }
+
+    public function historialCambios(Mantenimiento $mantenimiento)
+    {
+        $historial = DB::table('Historial_Cambios_Estado')
+            ->join('Catalogo_EstadoMantenimiento as EA',
+                'Historial_Cambios_Estado.ID_EstadoAnterior', '=', 'EA.ID_EstadoMantenimiento')
+            ->join('Catalogo_EstadoMantenimiento as EN',
+                'Historial_Cambios_Estado.ID_EstadoNuevo', '=', 'EN.ID_EstadoMantenimiento')
+            ->join('Users',
+                'Historial_Cambios_Estado.ID_UsuarioModifico', '=', 'Users.ID_User')
+            ->where('Historial_Cambios_Estado.ID_Mantenimiento', $mantenimiento->ID_Mantenimiento)
+            ->orderBy('Historial_Cambios_Estado.Fecha_Cambio')
+            ->select(
+                'EA.Nombre_EstadoMantenimiento as Estado_Anterior',
+                'EN.Nombre_EstadoMantenimiento as Estado_Nuevo',
+                'Users.Usuario as Modificado_Por',
+                'Historial_Cambios_Estado.Fecha_Cambio',
+                'Historial_Cambios_Estado.Motivo_Cambio'
+            )
+            ->get();
+
+        return response()->json($historial);
+    }
+
+    public function auditoria(Request $request)
+    {
+        $query = DB::table('Historial_Cambios_Estado')
+            ->join('Mantenimientos',
+                'Historial_Cambios_Estado.ID_Mantenimiento', '=', 'Mantenimientos.ID_Mantenimiento')
+            ->join('Equipos', 'Mantenimientos.ID_Equipo', '=', 'Equipos.ID_Equipo')
+            ->join('Catalogo_EstadoMantenimiento as EA',
+                'Historial_Cambios_Estado.ID_EstadoAnterior', '=', 'EA.ID_EstadoMantenimiento')
+            ->join('Catalogo_EstadoMantenimiento as EN',
+                'Historial_Cambios_Estado.ID_EstadoNuevo', '=', 'EN.ID_EstadoMantenimiento')
+            ->join('Users',
+                'Historial_Cambios_Estado.ID_UsuarioModifico', '=', 'Users.ID_User');
+
+        if ($request->filled('tecnico_id')) {
+            $query->where('Mantenimientos.ID_Tecnico', $request->tecnico_id);
+        }
+        if ($request->filled('estado_nuevo')) {
+            $query->where('EN.Nombre_EstadoMantenimiento', $request->estado_nuevo);
+        }
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('Historial_Cambios_Estado.Fecha_Cambio', '>=', $request->fecha_desde);
+        }
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('Historial_Cambios_Estado.Fecha_Cambio', '<=', $request->fecha_hasta);
+        }
+
+        $cambios = $query
+            ->orderBy('Historial_Cambios_Estado.Fecha_Cambio', 'desc')
+            ->select(
+                'Historial_Cambios_Estado.*',
+                'Equipos.Codigo_Inventario',
+                'EA.Nombre_EstadoMantenimiento as Estado_Anterior',
+                'EN.Nombre_EstadoMantenimiento as Estado_Nuevo',
+                'Users.Usuario as Modificado_Por'
+            )
+            ->paginate(20)
+            ->withQueryString();
+
+        $tecnicos = DB::table('Users')
+            ->join('Roles_User', 'Users.ID_Rol', '=', 'Roles_User.ID_Rol')
+            ->where('Roles_User.Rol', 'Tecnico')
+            ->select('Users.ID_User', 'Users.Usuario')
+            ->get();
+
+        return view('mantenimientos.auditoria', compact('cambios', 'tecnicos'));
     }
 
     public function historialCierres(Request $request)
