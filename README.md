@@ -113,7 +113,7 @@ php artisan key:generate
 
 **5. Crear la base de datos**
 
-Ejecuta el script SQL incluido en la carpeta `/database/QueryBD-SIGEMPI.sql` y `/database/sigempi_test_data.sql`  desde SQL Server Management Studio (SSMS) para crear la base de datos, tablas y datos iniciales.
+Ejecuta el script SQL incluido en la carpeta `DATABASE/SQLquery v3.sql`  desde SQL Server Management Studio (SSMS) para crear la base de datos, tablas y datos iniciales.
 
 Luego ejecuta las migraciones de Laravel para la tabla de recuperación de contraseña de un solo uso:
 
