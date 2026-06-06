@@ -1,59 +1,140 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# SIGEMPI — Sistema de Gestión de Mantenimiento del Parque Informático
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistema web desarrollado en Laravel para la gestión y seguimiento de mantenimientos de equipos informáticos.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Universidad Don Bosco
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Campo | Detalle |
+|---|---|
+| **Asignatura** | Análisis y Diseño de Sistemas Informáticos (ADS941) |
+| **Docente** | Ing. Héctor Alexander Valladares Pérez |
+| **Proyecto** | Sistema de Gestión de Mantenimiento del Parque Informático (SIGEMPI) — Fase 2 |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 👥 Integrantes
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+| Carnet | Nombres | Apellidos |
+|---|---|---|
+| OH240248 | Jonatan Alexander | Orellana Hernández |
+| AG231993 | Katerine Esmeralda | Arias Grande |
+| SC121824 | Oswaldo Wilfredo | Saravia Cuadra |
+| CT201109 | Daniela Nicole | Cruz Torres |
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-## Laravel Sponsors
+## Descripción
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+SIGEMPI es una aplicación web que permite al Ministerio de Salud gestionar el mantenimiento preventivo y correctivo de su parque informático. El sistema contempla dos roles principales:
 
-### Premium Partners
+- **Coordinador** — administra usuarios, equipos, programa mantenimientos, consulta reportes y auditoría de cambios.
+- **Técnico** — consulta sus asignaciones, registra el cierre de mantenimientos y revisa su historial.
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Funcionalidades principales
 
-## Contributing
+- Registro, modificación y consulta de equipos informáticos
+- Gestión de usuarios con roles y auditoría de cambios
+- Programación y seguimiento de mantenimientos preventivos
+- Registro de acciones realizadas al completar un mantenimiento
+- Reprogramación y cancelación de mantenimientos
+- Historial completo de cambios de estado por mantenimiento
+- Reportes filtrables por período, equipo y técnico
+- Página de auditoría de cambios de estado
+- Autenticación con restricción de acceso por rol
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+## Tecnologías utilizadas
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- **Backend:** PHP 8.2 / Laravel 11
+- **Base de datos:** Microsoft SQL Server 2019
+- **Driver:** ODBC Driver 17 for SQL Server
+- **Frontend:** Blade Templates, CSS personalizado, JavaScript vanilla
+- **Servidor local:** Laravel Artisan (development server)
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Instalación local
 
-## License
+### Requisitos previos
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- PHP >= 8.2
+- Composer
+- SQL Server 2019 (o superior)
+- ODBC Driver 17 for SQL Server
+- Extensiones PHP habilitadas: `pdo_sqlsrv`, `sqlsrv`
+
+### Pasos
+
+**1. Clonar el repositorio**
+```bash
+git clone https://github.com/tu-usuario/sigempi.git
+cd sigempi
+```
+
+**2. Instalar dependencias**
+```bash
+composer install
+```
+
+**3. Configurar el archivo de entorno**
+```bash
+cp .env.example .env
+```
+
+Edita el `.env` con los datos de tu instancia de SQL Server:
+
+```env
+APP_NAME=SIGEMPI
+APP_ENV=local
+APP_KEY=
+APP_DEBUG=true
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=sqlsrv
+DB_HOST=localhost
+DB_PORT=1433
+DB_DATABASE=SIGEMPI_DB
+DB_USERNAME=tu_usuario
+DB_PASSWORD=tu_contraseña
+
+CACHE_STORE=file
+SESSION_DRIVER=file
+```
+
+**4. Generar la clave de la aplicación**
+```bash
+php artisan key:generate
+```
+
+**5. Crear la base de datos**
+
+Ejecuta el script SQL incluido en la carpeta `/database/QueryBD-SIGEMPI.sql` y `/database/sigempi_test_data.sql`  desde SQL Server Management Studio (SSMS) para crear la base de datos, tablas y datos iniciales.
+
+Luego ejecuta las migraciones de Laravel para la tabla de recuperación de contraseña de un solo uso:
+
+```bash
+php artisan migrate
+```
+
+**6. Iniciar el servidor**
+```bash
+php artisan serve
+```
+
+Accede en tu navegador a: [http://localhost:8000](http://localhost:8000)
+
+---
+
+## Credenciales de prueba
+
+| Rol | Usuario | Contraseña |
+|---|---|---|
+| Coordinador | `admin` | `123456` |
+| Técnico | `tecnico` | `123456` |
+
+---
+
+Proyecto académico — Todos los derechos reservados © 2026.
