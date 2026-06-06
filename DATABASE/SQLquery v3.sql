@@ -31,11 +31,15 @@ ID_EstadoUsuario INT FOREIGN KEY REFERENCES Estado_Usuario(ID_EstadoUsuario),
 Usuario varchar(50) UNIQUE not null,
 Correo_User varchar(100) not null,
 Password_Hash varchar(200) not null,
--- Hash para agregarle un encriptado a las contraseÒas
-Fecha_CreacionUser datetime DEFAULT GETDATE() -- Para saber cu·ndo se registrÛ el usuario
+-- Hash para agregarle un encriptado a las contrase√±as
+Fecha_CreacionUser datetime DEFAULT GETDATE() -- Para saber cu√°ndo se registr√≥ el usuario
 )
 
-
+INSERT INTO Users (ID_Rol, ID_EstadoUsuario, Usuario, Correo_User, Password_Hash)
+VALUES
+(1, 1, 'admin',     'admin@sistema.com',         '$2y$10$sgOFIrNvaepkgNp1EGQjt.VEY5/Y0e8erdDETltX7fqGy.ngDd6eW'),
+(2, 1, 'tecnico',   'tecnico@sistema.com',       '$2y$10$sgOFIrNvaepkgNp1EGQjt.VEY5/Y0e8erdDETltX7fqGy.ngDd6eW')
+    
 CREATE TABLE Tipos_Equipo
 (
 ID_Tipo INT IDENTITY(1,1) PRIMARY KEY,
@@ -54,7 +58,7 @@ Fecha_CreacionEstado datetime DEFAULT GETDATE()
 )
 
 INSERT INTO Estado_Equipo(Estado)
-Values ('DaÒado'),('Activo'),('Bodega'),('Inactivo'),('De Baja')
+Values ('Da√±ado'),('Activo'),('Bodega'),('Inactivo'),('De Baja')
 
 CREATE TABLE Departamento
 (
@@ -64,10 +68,10 @@ NombreDepartamento varchar(100) not null
 
 INSERT INTO Departamento(NombreDepartamento)
 VALUES 
-('Ahuachap·n'), ('Santa Ana'), ('Sonsonate'), ('La Libertad'), 
-('Chalatenango'), ('Cuscatl·n'), ('San Salvador'), ('La Paz'), 
-('CabaÒas'), ('San Vicente'), ('Usulut·n'), ('San Miguel'), 
-('Moraz·n'), ('La UniÛn');
+('Ahuachap√°n'), ('Santa Ana'), ('Sonsonate'), ('La Libertad'), 
+('Chalatenango'), ('Cuscatl√°n'), ('San Salvador'), ('La Paz'), 
+('Caba√±as'), ('San Vicente'), ('Usulut√°n'), ('San Miguel'), 
+('Moraz√°n'), ('La Uni√≥n');
 
 CREATE TABLE Municipio
 (
@@ -78,10 +82,10 @@ NombreMunicipio varchar(100) not null
 
 INSERT INTO Municipio (ID_Departamento, NombreMunicipio)
 VALUES
-(1, 'Ahuachap·n'), (1, 'Apaneca'), (1, 'Atiquizaya'), (1, 'ConcepciÛn de Ataco'),
-(2, 'Santa Ana'), (2, 'Chalchuapa'), (2, 'Metap·n'), (2, 'Coatepeque'),
+(1, 'Ahuachap√°n'), (1, 'Apaneca'), (1, 'Atiquizaya'), (1, 'Concepci√≥n de Ataco'),
+(2, 'Santa Ana'), (2, 'Chalchuapa'), (2, 'Metap√°n'), (2, 'Coatepeque'),
 (3, 'Sonsonate'), (3, 'Acajutla'), (3, 'Izalco'), (3, 'Nahuizalco'),
-(4, 'Santa Tecla'), (4, 'Antiguo Cuscatl·n'), (4, 'La Libertad'), (4, 'Zaragoza'),
+(4, 'Santa Tecla'), (4, 'Antiguo Cuscatl√°n'), (4, 'La Libertad'), (4, 'Zaragoza'),
 (7, 'San Salvador'), (7, 'Soyapango'), (7, 'Mejicanos'), (7, 'Apopa'), (7, 'Ilopango'), (7, 'San Marcos'),
 (12, 'San Miguel'), (12, 'Ciudad Barrios'), (12, 'Chirilagua'), (12, 'Quelepa');
 
@@ -97,29 +101,29 @@ VALUES
 -- Ubicaciones en San Salvador (ID 17 en el script anterior)
 (17, 'Hospital Nacional Rosales'),
 (17, 'Oficinas Administrativas Centrales'),
-(17, 'Centro de ImpresiÛn y Acabados'),
+(17, 'Centro de Impresi√≥n y Acabados'),
 (17, 'Unidad de Salud Barrios'),
 
 -- Ubicaciones en Santa Tecla (ID 13 en el script anterior)
 (13, 'Hospital Nacional San Rafael'),
-(13, 'Unidad de Salud Dr. Carlos DÌaz del Pinal'),
+(13, 'Unidad de Salud Dr. Carlos D√≠az del Pinal'),
 
 -- Ubicaciones en Santa Ana (ID 5 en el script anterior)
 (5, 'Hospital Nacional San Juan de Dios'),
 (5, 'Centro Regional de Salud Occidental'),
 
 -- Ubicaciones en Soyapango (ID 18 en el script anterior)
-(18, 'Hospital Nacional Psiqui·trico Dr. JosÈ Molina MartÌnez'),
+(18, 'Hospital Nacional Psiqui√°trico Dr. Jos√© Molina Mart√≠nez'),
 (18, 'Unidad de Salud Unicentro'),
 
 -- Ubicaciones en San Miguel (ID 23 en el script anterior)
 (23, 'Hospital Nacional San Juan de Dios (San Miguel)'),
-(23, 'AlmacÈn Regional de Insumos MÈdicos');
+(23, 'Almac√©n Regional de Insumos M√©dicos');
 
 CREATE TABLE Equipos
 (
 ID_Equipo int IDENTITY(1,1) PRIMARY KEY,
-Codigo_Inventario varchar(100) UNIQUE not null, -- El cÛdigo de la viÒeta fÌsica de la instituciÛn
+Codigo_Inventario varchar(100) UNIQUE not null, -- El c√≥digo de la vi√±eta f√≠sica de la instituci√≥n
 ID_Tipo INT FOREIGN KEY REFERENCES Tipos_Equipo(ID_Tipo),
 ID_Estado INT FOREIGN KEY REFERENCES Estado_Equipo(ID_Estado),
 ID_Ubicacion int FOREIGN KEY REFERENCES Ubicacion(ID_Ubicacion),
@@ -129,14 +133,14 @@ Modelo varchar(100)
 
 INSERT INTO Equipos (Codigo_Inventario, ID_Tipo, ID_Estado, ID_Ubicacion, Marca, Modelo)
 VALUES
--- Equipos para el "Centro de ImpresiÛn y Acabados" (Asumiendo ID_Ubicacion = 3)
+-- Equipos para el "Centro de Impresi√≥n y Acabados" (Asumiendo ID_Ubicacion = 3)
 ('MINSAL-IMP-2026-001', 5, 2, 3, 'HP', 'DesignJet T1600'), -- Tipo: Plotter (5), Estado: Activo (2)
 ('MINSAL-WS-2026-045', 1, 2, 3, 'Dell', 'Precision 3650'), -- Tipo: Escritorio (1), Estado: Activo (2)
 ('MINSAL-LT-2026-012', 2, 3, 3, 'Lenovo', 'ThinkPad T14'), -- Tipo: Laptop (2), Estado: Bodega (3)
 
 -- Equipos para "Hospital Nacional Rosales" (Asumiendo ID_Ubicacion = 1)
 ('MINSAL-PC-2026-112', 1, 2, 1, 'Lenovo', 'ThinkCentre M70s'), -- Tipo: Escritorio (1), Estado: Activo (2)
-('MINSAL-PRN-2026-003', 4, 1, 1, 'Epson', 'EcoTank L15150'),  -- Tipo: Impresora (4), Estado: DaÒado (1)
+('MINSAL-PRN-2026-003', 4, 1, 1, 'Epson', 'EcoTank L15150'),  -- Tipo: Impresora (4), Estado: Da√±ado (1)
 
 -- Equipos para "Oficinas Administrativas Centrales" (Asumiendo ID_Ubicacion = 2)
 ('MINSAL-SRV-2026-001', 3, 2, 2, 'Dell', 'PowerEdge R740'),  -- Tipo: Servidor (3), Estado: Activo (2)
